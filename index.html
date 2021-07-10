@@ -159,7 +159,7 @@
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/07/10/Makefile%E5%AD%A6%E4%B9%A0/" class="post-title-link" itemprop="url">进程池</a>
+            <a href="/2021/07/10/Makefile%E5%AD%A6%E4%B9%A0/" class="post-title-link" itemprop="url">Makefile</a>
         </h2>
 
         <div class="post-meta">
@@ -170,7 +170,7 @@
               <span class="post-meta-item-text">Posted on</span>
               
 
-              <time title="Created: 2021-07-10 08:41:20 / Modified: 10:55:07" itemprop="dateCreated datePublished" datetime="2021-07-10T08:41:20+08:00">2021-07-10</time>
+              <time title="Created: 2021-07-10 08:41:20 / Modified: 10:56:32" itemprop="dateCreated datePublished" datetime="2021-07-10T08:41:20+08:00">2021-07-10</time>
             </span>
 
           
@@ -184,15 +184,52 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="makefile"><a class="markdownIt-Anchor" href="#makefile"></a> Makefile</h1>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/07/10/Makefile%E5%AD%A6%E4%B9%A0/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
+          <span id="more"></span>
+<h1 id="makefile"><a class="markdownIt-Anchor" href="#makefile"></a> Makefile</h1>
+<ol>
+<li>
+<p>Makefile的变量：</p>
+<ol>
+<li>
+<p>自定义变量：<strong>字符串(变量名):=字符串(变量值)</strong>，可通过$(变量名)替代所有的变量值。</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#未使用自定义变量</span></span><br><span class="line"><span class="section">main:main.c</span></span><br><span class="line">	gcc main.c -o main</span><br><span class="line">----------------------------</span><br><span class="line"><span class="comment">#使用自定义变量</span></span><br><span class="line">target:=main</span><br><span class="line">src:=main.c</span><br><span class="line"><span class="variable">$(target)</span>:<span class="variable">$(src)</span></span><br><span class="line">	gcc <span class="variable">$(src)</span> -o <span class="variable">$(target)</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>自动变量：随规则的变化，同一个变量名对应不同的变量值</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">1.</span> $@：目标文件</span><br><span class="line"><span class="bullet">2.</span> $&lt;：第一个依赖文件</span><br><span class="line"><span class="bullet">3.</span> $^：所有的依赖文件，以空格分隔</span><br><span class="line"><span class="bullet">4.</span> $?：日期信誉目标文件的所有相关文件列表，逗号分隔</span><br><span class="line"><span class="bullet">5.</span> $(@D)：目标文件的目录名部分</span><br><span class="line"><span class="bullet">6.</span> $(@F)：目标文件的文件名部分</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>预定义的变量：有预定义的变量，可以手动其修改含义</p>
+<figure class="highlight markdown"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="bullet">1.</span> AR	打包库文件	ar</span><br><span class="line"><span class="bullet">2.</span> AS	汇编程序	as</span><br><span class="line"><span class="bullet">3.</span> CC	C编译器	cc</span><br><span class="line"><span class="bullet">4.</span> CPP	CPP编译器	$(CC) -E</span><br><span class="line"><span class="bullet">5.</span> CXX	C++编译器	g++</span><br><span class="line"><span class="bullet">6.</span> RM	删除	rm -f</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+<li>
+<p>wildcard：从文件系统中提取文件名(按照通配符规则)</p>
+<p>subst/patsubst：文本替换/按格式文本替换</p>
+   <figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> <span class="comment">#srcs为目录下所有.c文件</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">var:=<span class="string">&quot;How are you&quot;</span></span><br><span class="line">newvar:=<span class="variable">$(<span class="built_in">patsubst</span> you,me,<span class="variable">$(var)</span>)</span> <span class="comment">#将var中所有的you替换成me</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> </span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span> <span class="comment">#将srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>%<strong>匹配字符：从上一个规则的</strong>依赖条件</strong>中按照匹配格式匹配内容，每次匹配成功就生成一个规则，<strong>%<strong>表示匹配得到的内容。(在变量引用时使用</strong>%</strong>)</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">srcs:$(wildcard *.c) </span></span><br><span class="line"><span class="section">objs:$(patsubst %.c,%,<span class="variable">$(srcs)</span>) #匹配srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>for循环：</p>
+   <figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:</span></span><br><span class="line">    for i in <span class="variable">$(exes)</span>; do <span class="variable">$(CC)</span> $$i.c -o $$i; done <span class="comment">#$$i代表$(exes)中的内容</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>伪目标：以不存在的文件作为命令的目标(每次make都会执行)，常用<code>.PHONY</code>来区分伪目标方便阅读。</p>
+</li>
+<li>
+<p>增量编译：</p>
+   <figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span></span><br><span class="line">final:=main</span><br><span class="line"><span class="section">all:<span class="variable">$(final)</span></span></span><br><span class="line"><span class="variable">$(final)</span>:<span class="variable">$(objs)</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="section">%.o:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> -c <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(objs)</span> <span class="variable">$(final)</span></span><br><span class="line"><span class="section">rebuild:clean all </span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>编译所有.c文件得到可执行文件</p>
+   <figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:<span class="variable">$(exes)</span></span></span><br><span class="line"><span class="section">%:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(exes)</span></span><br><span class="line"><span class="section">rebuild:clean all</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+
       
     </div>
 
