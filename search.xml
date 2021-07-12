@@ -464,6 +464,7 @@
 <h1 id="后续可以做的改进"><a class="markdownIt-Anchor" href="#后续可以做的改进"></a> 后续可以做的改进</h1>
 <ol>
 <li>零拷贝传输：加快服务器传输速率。</li>
+<li>进程池的退出。</li>
 </ol>
 ]]></content>
       <tags>
