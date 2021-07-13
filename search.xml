@@ -358,6 +358,98 @@
 ]]></content>
   </entry>
   <entry>
+    <title>进程间通信方式(1)-管道</title>
+    <url>/2021/07/13/%E7%AE%A1%E9%81%93/</url>
+    <content><![CDATA[<h1 id="进程间通信方式1-管道"><a class="markdownIt-Anchor" href="#进程间通信方式1-管道"></a> 进程间通信方式(1)-管道</h1>
+<span id="more"></span>
+<h2 id="无名管道"><a class="markdownIt-Anchor" href="#无名管道"></a> 无名管道</h2>
+<ol>
+<li>创建：使用<code>int pipe(int pipe_fd[2])</code>函数创建。
+<ul>
+<li>返回值：成功返回0，失败返回1。</li>
+<li>参数是一个数组，保存的是管道两端的文件描述符，pipe_fd[1]是写端，pipe_fd[0]是读端。</li>
+</ul>
+</li>
+<li>特点：
+<ul>
+<li>无名管道只能在有亲缘关系的进程间进行通信；例如父子，兄弟进程。</li>
+<li>无名管道是半双工的，想要实现全双工需要建立两条无名管道。</li>
+<li>依赖于文件系统，生命周期随着进程的结束而结束。</li>
+<li>管道是基于字节流来通信的，数据与数据之间没有边界，多次写管道的话数据是粘在一起的。</li>
+<li>管道关闭读端，然后写管道的话，程序会收到系统发送的SIGPIPE信号，中止程序，进程的退出码是141。shell中输入<code>echo $?</code>可以查看上次程序退出码，退出码大于128的进程都是呗信号打断的。</li>
+<li>管道关闭写端，用read读取管道，read变成非阻塞状态，并返回0；</li>
+</ul>
+</li>
+</ol>
+<h2 id="有名管道"><a class="markdownIt-Anchor" href="#有名管道"></a> 有名管道</h2>
+<ol>
+<li>
+<p>创建：使用<code>int mkfifo(const char *pathname, mod_t mode)</code>函数创建。</p>
+<ul>
+<li>返回值：成功返回0，失败返回-1。</li>
+<li>参数1：管道名。</li>
+<li>参数2：有名管道权限。</li>
+</ul>
+</li>
+<li>
+<p>特点：</p>
+<ul>
+<li>在没有亲缘关系之间的进程间进行通信。</li>
+<li>是一种特殊类型的文件，不会随着进程的结束而消失。</li>
+</ul>
+</li>
+<li>
+<p>删除有名管道：使用<code>int unlink(const char *pathname)</code>函数删除。</p>
+<ul>
+<li>
+<p>返回值：成功则返回0, 失败返回-1。</p>
+</li>
+<li>
+<p>参数：管道/文件名。</p>
+</li>
+<li>
+<p>不仅可以删除有名管道文件，还可以删除普通的文件。</p>
+</li>
+<li>
+<p>实质是删除文件的连接数，当该文件的连接数为0时，才真正的删除管道/文件。</p>
+</li>
+</ul>
+</li>
+</ol>
+<h2 id="标准流管道用的少"><a class="markdownIt-Anchor" href="#标准流管道用的少"></a> 标准流管道（用的少）</h2>
+<ol>
+<li>
+<p>创建：使用<code>FILE *popen(const char *cmd, const char *type)</code>函数创建。</p>
+<ul>
+<li>
+<p>返回值：成功返回标准I/O流，失败返回NULL。</p>
+</li>
+<li>
+<p>参数1：启动另外一个进程。</p>
+</li>
+<li>
+<p>参数2：打开的方式。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>特点：popen其实就是对管道的操作进行封装。</p>
+<ol>
+<li>创建一条管道。</li>
+<li>fork一个子进程。</li>
+<li>在父进程中关闭不需要使用的文件描述符。</li>
+<li>执行exec函数族的调用。</li>
+<li>执行函数中所指定的命令。</li>
+</ol>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>C</tag>
+        <tag>Linux</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>进程池</title>
     <url>/2021/07/12/%E8%BF%9B%E7%A8%8B%E6%B1%A0/</url>
     <content><![CDATA[<h1 id="进程池流程"><a class="markdownIt-Anchor" href="#进程池流程"></a> 进程池流程</h1>
@@ -516,98 +608,6 @@
 ]]></content>
       <tags>
         <tag>C</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>进程间通信方式(1)-管道</title>
-    <url>/2021/07/13/%E7%AE%A1%E9%81%93/</url>
-    <content><![CDATA[<h1 id="进程间通信方式1-管道"><a class="markdownIt-Anchor" href="#进程间通信方式1-管道"></a> 进程间通信方式(1)-管道</h1>
-<span id="more"></span>
-<h2 id="无名管道"><a class="markdownIt-Anchor" href="#无名管道"></a> 无名管道</h2>
-<ol>
-<li>创建：使用<code>int pipe(int pipe_fd[2])</code>函数创建。
-<ul>
-<li>返回值：成功返回0，失败返回1。</li>
-<li>参数是一个数组，保存的是管道两端的文件描述符，pipe_fd[1]是写端，pipe_fd[0]是读端。</li>
-</ul>
-</li>
-<li>特点：
-<ul>
-<li>无名管道只能在有亲缘关系的进程间进行通信；例如父子，兄弟进程。</li>
-<li>无名管道是半双工的，想要实现全双工需要建立两条无名管道。</li>
-<li>依赖于文件系统，生命周期随着进程的结束而结束。</li>
-<li>管道是基于字节流来通信的，数据与数据之间没有边界，多次写管道的话数据是粘在一起的。</li>
-<li>管道关闭读端，然后写管道的话，程序会收到系统发送的SIGPIPE信号，中止程序，进程的退出码是141。shell中输入<code>echo $?</code>可以查看上次程序退出码，退出码大于128的进程都是呗信号打断的。</li>
-<li>管道关闭写端，用read读取管道，read变成非阻塞状态，并返回0；</li>
-</ul>
-</li>
-</ol>
-<h2 id="有名管道"><a class="markdownIt-Anchor" href="#有名管道"></a> 有名管道</h2>
-<ol>
-<li>
-<p>创建：使用<code>int mkfifo(const char *pathname, mod_t mode)</code>函数创建。</p>
-<ul>
-<li>返回值：成功返回0，失败返回-1。</li>
-<li>参数1：管道名。</li>
-<li>参数2：有名管道权限。</li>
-</ul>
-</li>
-<li>
-<p>特点：</p>
-<ul>
-<li>在没有亲缘关系之间的进程间进行通信。</li>
-<li>是一种特殊类型的文件，不会随着进程的结束而消失。</li>
-</ul>
-</li>
-<li>
-<p>删除有名管道：使用<code>int unlink(const char *pathname)</code>函数删除。</p>
-<ul>
-<li>
-<p>返回值：成功则返回0, 失败返回-1。</p>
-</li>
-<li>
-<p>参数：管道/文件名。</p>
-</li>
-<li>
-<p>不仅可以删除有名管道文件，还可以删除普通的文件。</p>
-</li>
-<li>
-<p>实质是删除文件的连接数，当该文件的连接数为0时，才真正的删除管道/文件。</p>
-</li>
-</ul>
-</li>
-</ol>
-<h2 id="标准流管道用的少"><a class="markdownIt-Anchor" href="#标准流管道用的少"></a> 标准流管道（用的少）</h2>
-<ol>
-<li>
-<p>创建：使用<code>FILE *popen(const char *cmd, const char *type)</code>函数创建。</p>
-<ul>
-<li>
-<p>返回值：成功返回标准I/O流，失败返回NULL。</p>
-</li>
-<li>
-<p>参数1：启动另外一个进程。</p>
-</li>
-<li>
-<p>参数2：打开的方式。</p>
-</li>
-</ul>
-</li>
-<li>
-<p>特点：popen其实就是对管道的操作进行封装。</p>
-<ol>
-<li>创建一条管道。</li>
-<li>fork一个子进程。</li>
-<li>在父进程中关闭不需要使用的文件描述符。</li>
-<li>执行exec函数族的调用。</li>
-<li>执行函数中所指定的命令。</li>
-</ol>
-</li>
-</ol>
-]]></content>
-      <tags>
-        <tag>C</tag>
-        <tag>Linux</tag>
       </tags>
   </entry>
 </search>
