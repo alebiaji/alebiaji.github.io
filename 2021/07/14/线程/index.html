@@ -20,21 +20,20 @@
     var CONFIG = {"hostname":"alebiaji.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="进程间通信方式(1)-管道">
+  <meta name="description" content="线程  进程与线程的特点与区别  进程：资源分配的基本单位（最小单位），拥有自己独立的资源，如自己独立的数据段、代码段和堆栈段，所以在CPU进行进程切换时需要保存大量的上下文[1]，需要大量的时间开销。为了减少这一时间开销，因此引入了线程。  创建：fork() 退出：exit() 等待：wait()   线程：CPU调度的基本单位，一个进程至少拥有一个线程。一个进程中的多个线程会共享该进程的地">
 <meta property="og:type" content="article">
-<meta property="og:title" content="进程间通信方式(1)-管道">
-<meta property="og:url" content="http://alebiaji.top/2021/07/13/%E7%AE%A1%E9%81%93/index.html">
+<meta property="og:title" content="线程">
+<meta property="og:url" content="http://alebiaji.top/2021/07/14/%E7%BA%BF%E7%A8%8B/index.html">
 <meta property="og:site_name" content="Ale&#39;s Blog">
-<meta property="og:description" content="进程间通信方式(1)-管道">
+<meta property="og:description" content="线程  进程与线程的特点与区别  进程：资源分配的基本单位（最小单位），拥有自己独立的资源，如自己独立的数据段、代码段和堆栈段，所以在CPU进行进程切换时需要保存大量的上下文[1]，需要大量的时间开销。为了减少这一时间开销，因此引入了线程。  创建：fork() 退出：exit() 等待：wait()   线程：CPU调度的基本单位，一个进程至少拥有一个线程。一个进程中的多个线程会共享该进程的地">
 <meta property="og:locale">
-<meta property="article:published_time" content="2021-07-13T05:23:20.000Z">
-<meta property="article:modified_time" content="2021-07-13T14:48:34.000Z">
+<meta property="article:published_time" content="2021-07-14T08:10:20.000Z">
+<meta property="article:modified_time" content="2021-07-14T09:36:05.000Z">
 <meta property="article:author" content="Alebiaji">
 <meta property="article:tag" content="C">
-<meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://alebiaji.top/2021/07/13/%E7%AE%A1%E9%81%93/">
+<link rel="canonical" href="http://alebiaji.top/2021/07/14/%E7%BA%BF%E7%A8%8B/">
 
 
 <script id="page-configurations">
@@ -47,7 +46,7 @@
   };
 </script>
 
-  <title>进程间通信方式(1)-管道 | Ale's Blog</title>
+  <title>线程 | Ale's Blog</title>
   
 
 
@@ -180,7 +179,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://alebiaji.top/2021/07/13/%E7%AE%A1%E9%81%93/">
+    <link itemprop="mainEntityOfPage" href="http://alebiaji.top/2021/07/14/%E7%BA%BF%E7%A8%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -193,7 +192,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          进程间通信方式(1)-管道
+          线程
         </h1>
 
         <div class="post-meta">
@@ -204,7 +203,7 @@
               <span class="post-meta-item-text">Posted on</span>
               
 
-              <time title="Created: 2021-07-13 13:23:20 / Modified: 22:48:34" itemprop="dateCreated datePublished" datetime="2021-07-13T13:23:20+08:00">2021-07-13</time>
+              <time title="Created: 2021-07-14 16:10:20 / Modified: 17:36:05" itemprop="dateCreated datePublished" datetime="2021-07-14T16:10:20+08:00">2021-07-14</time>
             </span>
 
           
@@ -218,89 +217,96 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h1 id="进程间通信方式1-管道"><a class="markdownIt-Anchor" href="#进程间通信方式1-管道"></a> 进程间通信方式(1)-管道</h1>
-<span id="more"></span>
-<h2 id="无名管道"><a class="markdownIt-Anchor" href="#无名管道"></a> 无名管道</h2>
+        <h1 id="线程"><a class="markdownIt-Anchor" href="#线程"></a> 线程</h1>
+<h2 id="进程与线程的特点与区别"><a class="markdownIt-Anchor" href="#进程与线程的特点与区别"></a> 进程与线程的特点与区别</h2>
 <ol>
-<li>创建：使用<code>int pipe(int pipe_fd[2])</code>函数创建。
+<li>进程：资源分配的基本单位（最小单位），拥有自己独立的资源，如自己独立的数据段、代码段和堆栈段，所以在CPU进行进程切换时需要保存大量的上下文<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>，需要大量的时间开销。<strong>为了减少这一时间开销，因此引入了线程。</strong>
 <ul>
-<li>返回值：成功返回0，失败返回1。</li>
-<li>参数是一个数组，保存的是管道两端的文件描述符，pipe_fd[1]是写端，pipe_fd[0]是读端。</li>
+<li>创建：<code>fork()</code></li>
+<li>退出：<code>exit()</code></li>
+<li>等待：<code>wait()</code></li>
 </ul>
 </li>
-<li>特点：
+<li>线程：CPU调度的基本单位，一个进程至少拥有一个线程。一个进程中的多个线程会共享该进程的地址空间。线程只拥有少量的栈空间。线程的缺点：不利于资源的管理和保护<sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup>。
 <ul>
-<li>无名管道只能在有亲缘关系的进程间进行通信；例如父子，兄弟进程。</li>
-<li>无名管道是半双工的，想要实现全双工需要建立两条无名管道。</li>
-<li>依赖于文件系统，生命周期随着进程的结束而结束。</li>
-<li>管道是基于字节流来通信的，数据与数据之间没有边界，多次写管道的话数据是粘在一起的。</li>
-<li>管道关闭读端，然后写管道的话，程序会收到系统发送的SIGPIPE信号，中止程序，进程的退出码是141。shell中输入<code>echo $?</code>可以查看上次程序退出码，退出码大于128的进程都是呗信号打断的。</li>
-<li>管道关闭写端，用read读取管道，read变成非阻塞状态，并返回0；</li>
+<li>创建：<code>pthread_create()</code></li>
+<li>退出：<code>pthread_exit()</code></li>
+<li>等待：<code>pthread_join()</code></li>
+</ul>
+</li>
+<li>用比喻理解两者关系：进程就好比一个学校的某一间宿舍，线程就好比该宿舍中的某个人。</li>
+<li>查看进程相关信息的命令：<code>ps -elf</code></li>
+<li>查看线程相关信息的命令：<code>ps -elLf</code>（查看的时核心级线程id）</li>
+</ol>
+<h2 id="线程的种类"><a class="markdownIt-Anchor" href="#线程的种类"></a> 线程的种类</h2>
+<ol>
+<li>用户级：用户自己创建的线程。</li>
+<li>核心级：CPU实际运行的线程。</li>
+</ol>
+<h2 id="线程的一些操作"><a class="markdownIt-Anchor" href="#线程的一些操作"></a> 线程的一些操作</h2>
+<ol>
+<li>
+<p>线程的创建：<code>int pthread_create(pthread_t *thread, const pthread_attr_t attr, void *(*start_routine)(void *), void *arg)</code></p>
+<ul>
+<li>
+<p>返回值：成功返回0，失败返回错误码。</p>
+</li>
+<li>
+<p>参数1：线程id。</p>
+</li>
+<li>
+<p>参数2：线程的属性，没有特殊设置填NULL。</p>
+</li>
+<li>
+<p>参数3：线程的处理函数，注意函数类型为void *型。</p>
+</li>
+<li>
+<p>参数4：线程处理函数的参数。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>线程的等待：<code>int pthread_join(pthread_t thread, void **retval)</code></p>
+<ul>
+<li>返回值：成功返回0，失败返回错误码。</li>
+<li>参数1：等待退出的线程id。</li>
+<li>参数2：接收子线程的退出，可以接收指针类型的退出状态，也可以接收long类型的变量。</li>
+</ul>
+</li>
+<li>
+<p>线程的退出：<code>int pthread_exit(void *retval)</code></p>
+<ul>
+<li>返回值：使用函数的返回值作为线程的退出状态。（函数说明直译的，一般没啥用）</li>
+<li>参数：指向线程thread的返回值，一般填NULL。</li>
+</ul>
+</li>
+<li>
+<p>线程id的获取：<code>pthread_t pthread_self(void)</code>，永远不会失败，成功返回线程id。</p>
+</li>
+<li>
+<p>线程的取消：</p>
+<ol>
+<li>线程可以自己调用线程退出函数退出，也可以被其他线程杀掉，被其他线程杀掉的方式就叫做线程的取消。</li>
+<li>被杀掉的线程可以选择自己如何处理这个信号，如：忽略、立即终止、运行到<strong>取消点</strong>后终止。</li>
+<li>取消点：就是一些特殊函数：一般的阻塞性函数都是取消点，非阻塞性函数也有可能是取消点。</li>
+<li>线程取消函数：<code>int pthread_cancel(pthread_t thread)</code>
+<ul>
+<li>返回值：成功返回0，失败返回错误码。</li>
+<li>想要cancel掉的线程id。</li>
 </ul>
 </li>
 </ol>
-<h2 id="有名管道"><a class="markdownIt-Anchor" href="#有名管道"></a> 有名管道</h2>
-<ol>
-<li>
-<p>创建：使用<code>int mkfifo(const char *pathname, mod_t mode)</code>函数创建。</p>
-<ul>
-<li>返回值：成功返回0，失败返回-1。</li>
-<li>参数1：管道名。</li>
-<li>参数2：有名管道权限。</li>
-</ul>
-</li>
-<li>
-<p>特点：</p>
-<ul>
-<li>在没有亲缘关系之间的进程间进行通信。</li>
-<li>是一种特殊类型的文件，不会随着进程的结束而消失。</li>
-</ul>
-</li>
-<li>
-<p>删除有名管道：使用<code>int unlink(const char *pathname)</code>函数删除。</p>
-<ul>
-<li>
-<p>返回值：成功则返回0, 失败返回-1。</p>
-</li>
-<li>
-<p>参数：管道/文件名。</p>
-</li>
-<li>
-<p>不仅可以删除有名管道文件，还可以删除普通的文件。</p>
-</li>
-<li>
-<p>实质是删除文件的连接数，当该文件的连接数为0时，才真正的删除管道/文件。</p>
-</li>
-</ul>
 </li>
 </ol>
-<h2 id="标准流管道用的少"><a class="markdownIt-Anchor" href="#标准流管道用的少"></a> 标准流管道（用的少）</h2>
-<ol>
-<li>
-<p>创建：使用<code>FILE *popen(const char *cmd, const char *type)</code>函数创建。</p>
-<ul>
-<li>
-<p>返回值：成功返回标准I/O流，失败返回NULL。</p>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1" class="footnote-item"><p>—个进程的上下文(context)包括进程的状态、有关变量和数据结构的值、机器寄存器的值和PCB以及有关程序、数据等。一个进程的执行是在进程的上下文中执行。当正在执行的进程由于某种原因要让出处理机时，系统要做进程上下文切换，以使另一个进程得以执行。当进行上下文切换时点统要首先检查是否允许做上下文切换(在有些情况下，上下文切换是不允许的，例如系统正在执行某个不允许中断的原语时)。然后，系统要保留有关被切换进程的足够信息，以便以后切换回该进程时，顺利恢复该进程的执行。在系统保留了CPU现场之后，调度程序选择一个新的处于就绪状态的进程、并装配该进程的上下文，使CPU的控制权掌握在被选中进程手中。 <a href="#fnref1" class="footnote-backref">↩︎</a></p>
 </li>
-<li>
-<p>参数1：启动另外一个进程。</p>
-</li>
-<li>
-<p>参数2：打开的方式。</p>
-</li>
-</ul>
-</li>
-<li>
-<p>特点：popen其实就是对管道的操作进行封装。</p>
-<ol>
-<li>创建一条管道。</li>
-<li>fork一个子进程。</li>
-<li>在父进程中关闭不需要使用的文件描述符。</li>
-<li>执行exec函数族的调用。</li>
-<li>执行函数中所指定的命令。</li>
-</ol>
+<li id="fn2" class="footnote-item"><p>线程上锁后如果崩溃了，那么资源无法得到释放，其他线程都无法继续正常执行 <a href="#fnref2" class="footnote-backref">↩︎</a></p>
 </li>
 </ol>
+</section>
 
     </div>
 
@@ -311,7 +317,6 @@
       <footer class="post-footer">
           <div class="post-tags">
               <a href="/tags/C/" rel="tag"># C</a>
-              <a href="/tags/Linux/" rel="tag"># Linux</a>
           </div>
 
         
@@ -320,13 +325,10 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2021/07/12/%E8%BF%9B%E7%A8%8B%E6%B1%A0/" rel="prev" title="进程池">
-      <i class="fa fa-chevron-left"></i> 进程池
+    <a href="/2021/07/13/%E7%AE%A1%E9%81%93/" rel="prev" title="进程间通信方式(1)-管道">
+      <i class="fa fa-chevron-left"></i> 进程间通信方式(1)-管道
     </a></div>
-      <div class="post-nav-item">
-    <a href="/2021/07/14/%E7%BA%BF%E7%A8%8B/" rel="next" title="线程">
-      线程 <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
@@ -385,7 +387,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E9%97%B4%E9%80%9A%E4%BF%A1%E6%96%B9%E5%BC%8F1-%E7%AE%A1%E9%81%93"><span class="nav-number">1.</span> <span class="nav-text"> 进程间通信方式(1)-管道</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A0%E5%90%8D%E7%AE%A1%E9%81%93"><span class="nav-number">1.1.</span> <span class="nav-text"> 无名管道</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%89%E5%90%8D%E7%AE%A1%E9%81%93"><span class="nav-number">1.2.</span> <span class="nav-text"> 有名管道</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%87%E5%87%86%E6%B5%81%E7%AE%A1%E9%81%93%E7%94%A8%E7%9A%84%E5%B0%91"><span class="nav-number">1.3.</span> <span class="nav-text"> 标准流管道（用的少）</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text"> 线程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E4%B8%8E%E7%BA%BF%E7%A8%8B%E7%9A%84%E7%89%B9%E7%82%B9%E4%B8%8E%E5%8C%BA%E5%88%AB"><span class="nav-number">1.1.</span> <span class="nav-text"> 进程与线程的特点与区别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%9A%84%E7%A7%8D%E7%B1%BB"><span class="nav-number">1.2.</span> <span class="nav-text"> 线程的种类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BA%BF%E7%A8%8B%E7%9A%84%E4%B8%80%E4%BA%9B%E6%93%8D%E4%BD%9C"><span class="nav-number">1.3.</span> <span class="nav-text"> 线程的一些操作</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
