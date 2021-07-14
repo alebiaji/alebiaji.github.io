@@ -198,7 +198,7 @@
               <span class="post-meta-item-text">Posted on</span>
               
 
-              <time title="Created: 2021-07-14 16:10:20 / Modified: 17:36:05" itemprop="dateCreated datePublished" datetime="2021-07-14T16:10:20+08:00">2021-07-14</time>
+              <time title="Created: 2021-07-14 16:10:20 / Modified: 17:39:34" itemprop="dateCreated datePublished" datetime="2021-07-14T16:10:20+08:00">2021-07-14</time>
             </span>
 
           
@@ -212,8 +212,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h1 id="线程"><a class="markdownIt-Anchor" href="#线程"></a> 线程</h1>
-<h2 id="进程与线程的特点与区别"><a class="markdownIt-Anchor" href="#进程与线程的特点与区别"></a> 进程与线程的特点与区别</h2>
+          <h1 id="进程与线程的特点与区别"><a class="markdownIt-Anchor" href="#进程与线程的特点与区别"></a> 进程与线程的特点与区别</h1>
 <ol>
 <li>进程：资源分配的基本单位（最小单位），拥有自己独立的资源，如自己独立的数据段、代码段和堆栈段，所以在CPU进行进程切换时需要保存大量的上下文<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>，需要大量的时间开销。<strong>为了减少这一时间开销，因此引入了线程。</strong>
 <ul>
@@ -227,82 +226,15 @@
 <li>创建：<code>pthread_create()</code></li>
 <li>退出：<code>pthread_exit()</code></li>
 <li>等待：<code>pthread_join()</code></li>
-</ul>
-</li>
-<li>用比喻理解两者关系：进程就好比一个学校的某一间宿舍，线程就好比该宿舍中的某个人。</li>
-<li>查看进程相关信息的命令：<code>ps -elf</code></li>
-<li>查看线程相关信息的命令：<code>ps -elLf</code>（查看的时核心级线程id）</li>
-</ol>
-<h2 id="线程的种类"><a class="markdownIt-Anchor" href="#线程的种类"></a> 线程的种类</h2>
-<ol>
-<li>用户级：用户自己创建的线程。</li>
-<li>核心级：CPU实际运行的线程。</li>
-</ol>
-<h2 id="线程的一些操作"><a class="markdownIt-Anchor" href="#线程的一些操作"></a> 线程的一些操作</h2>
-<ol>
-<li>
-<p>线程的创建：<code>int pthread_create(pthread_t *thread, const pthread_attr_t attr, void *(*start_routine)(void *), void *arg)</code></p>
-<ul>
-<li>
-<p>返回值：成功返回0，失败返回错误码。</p>
-</li>
-<li>
-<p>参数1：线程id。</p>
-</li>
-<li>
-<p>参数2：线程的属性，没有特殊设置填NULL。</p>
-</li>
-<li>
-<p>参数3：线程的处理函数，注意函数类型为void *型。</p>
-</li>
-<li>
-<p>参数4：线程处理函数的参数。</p>
-</li>
-</ul>
-</li>
-<li>
-<p>线程的等待：<code>int pthread_join(pthread_t thread, void **retval)</code></p>
-<ul>
-<li>返回值：成功返回0，失败返回错误码。</li>
-<li>参数1：等待退出的线程id。</li>
-<li>参数2：接收子线程的退出，可以接收指针类型的退出状态，也可以接收long类型的变量。</li>
-</ul>
-</li>
-<li>
-<p>线程的退出：<code>int pthread_exit(void *retval)</code></p>
-<ul>
-<li>返回值：使用函数的返回值作为线程的退出状态。（函数说明直译的，一般没啥用）</li>
-<li>参数：指向线程thread的返回值，一般填NULL。</li>
-</ul>
-</li>
-<li>
-<p>线程id的获取：<code>pthread_t pthread_self(void)</code>，永远不会失败，成功返回线程id。</p>
-</li>
-<li>
-<p>线程的取消：</p>
-<ol>
-<li>线程可以自己调用线程退出函数退出，也可以被其他线程杀掉，被其他线程杀掉的方式就叫做线程的取消。</li>
-<li>被杀掉的线程可以选择自己如何处理这个信号，如：忽略、立即终止、运行到<strong>取消点</strong>后终止。</li>
-<li>取消点：就是一些特殊函数：一般的阻塞性函数都是取消点，非阻塞性函数也有可能是取消点。</li>
-<li>线程取消函数：<code>int pthread_cancel(pthread_t thread)</code>
-<ul>
-<li>返回值：成功返回0，失败返回错误码。</li>
-<li>想要cancel掉的线程id。</li>
-</ul>
-</li>
-</ol>
-</li>
-</ol>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li id="fn1" class="footnote-item"><p>—个进程的上下文(context)包括进程的状态、有关变量和数据结构的值、机器寄存器的值和PCB以及有关程序、数据等。一个进程的执行是在进程的上下文中执行。当正在执行的进程由于某种原因要让出处理机时，系统要做进程上下文切换，以使另一个进程得以执行。当进行上下文切换时点统要首先检查是否允许做上下文切换(在有些情况下，上下文切换是不允许的，例如系统正在执行某个不允许中断的原语时)。然后，系统要保留有关被切换进程的足够信息，以便以后切换回该进程时，顺利恢复该进程的执行。在系统保留了CPU现场之后，调度程序选择一个新的处于就绪状态的进程、并装配该进程的上下文，使CPU的控制权掌握在被选中进程手中。 <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-<li id="fn2" class="footnote-item"><p>线程上锁后如果崩溃了，那么资源无法得到释放，其他线程都无法继续正常执行 <a href="#fnref2" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
-
+</ul></li></ol>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/07/14/%E7%BA%BF%E7%A8%8B/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 

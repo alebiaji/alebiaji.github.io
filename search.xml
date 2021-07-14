@@ -628,8 +628,7 @@
   <entry>
     <title>线程</title>
     <url>/2021/07/14/%E7%BA%BF%E7%A8%8B/</url>
-    <content><![CDATA[<h1 id="线程"><a class="markdownIt-Anchor" href="#线程"></a> 线程</h1>
-<h2 id="进程与线程的特点与区别"><a class="markdownIt-Anchor" href="#进程与线程的特点与区别"></a> 进程与线程的特点与区别</h2>
+    <content><![CDATA[<h1 id="进程与线程的特点与区别"><a class="markdownIt-Anchor" href="#进程与线程的特点与区别"></a> 进程与线程的特点与区别</h1>
 <ol>
 <li>进程：资源分配的基本单位（最小单位），拥有自己独立的资源，如自己独立的数据段、代码段和堆栈段，所以在CPU进行进程切换时需要保存大量的上下文<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>，需要大量的时间开销。<strong>为了减少这一时间开销，因此引入了线程。</strong>
 <ul>
@@ -644,17 +643,18 @@
 <li>退出：<code>pthread_exit()</code></li>
 <li>等待：<code>pthread_join()</code></li>
 </ul>
+<span id="more"></span>
 </li>
 <li>用比喻理解两者关系：进程就好比一个学校的某一间宿舍，线程就好比该宿舍中的某个人。</li>
 <li>查看进程相关信息的命令：<code>ps -elf</code></li>
 <li>查看线程相关信息的命令：<code>ps -elLf</code>（查看的时核心级线程id）</li>
 </ol>
-<h2 id="线程的种类"><a class="markdownIt-Anchor" href="#线程的种类"></a> 线程的种类</h2>
+<h1 id="线程的种类"><a class="markdownIt-Anchor" href="#线程的种类"></a> 线程的种类</h1>
 <ol>
 <li>用户级：用户自己创建的线程。</li>
 <li>核心级：CPU实际运行的线程。</li>
 </ol>
-<h2 id="线程的一些操作"><a class="markdownIt-Anchor" href="#线程的一些操作"></a> 线程的一些操作</h2>
+<h1 id="线程的一些操作"><a class="markdownIt-Anchor" href="#线程的一些操作"></a> 线程的一些操作</h1>
 <ol>
 <li>
 <p>线程的创建：<code>int pthread_create(pthread_t *thread, const pthread_attr_t attr, void *(*start_routine)(void *), void *arg)</code></p>
