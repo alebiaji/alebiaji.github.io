@@ -452,7 +452,7 @@
   <entry>
     <title>进程池</title>
     <url>/2021/07/12/%E8%BF%9B%E7%A8%8B%E6%B1%A0/</url>
-    <content><![CDATA[<h1 id="进程池流程"><a class="markdownIt-Anchor" href="#进程池流程"></a> 进程池流程</h1>
+    <content><![CDATA[<h1 id="进程池"><a class="markdownIt-Anchor" href="#进程池"></a> 进程池</h1>
 <ul>
 <li>
 <p>目的：实现多个客户端同时访问服务器获得服务(本文例子为下载文件)</p>
