@@ -1,133 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>Makefile学习</title>
-    <url>/2021/07/10/Makefile%E5%AD%A6%E4%B9%A0/</url>
-    <content><![CDATA[<h1 id="makefile"><a class="markdownIt-Anchor" href="#makefile"></a> Makefile</h1>
-<h4 id="功能通过makefile文件来描述源程序之间的相互关系并自动维护编译工作"><a class="markdownIt-Anchor" href="#功能通过makefile文件来描述源程序之间的相互关系并自动维护编译工作"></a> 功能：通过makefile文件来描述源程序之间的相互关系并自动维护编译工作。</h4>
-<span id="more"></span>
-<ol>
-<li>
-<p>Makefile的变量：</p>
-<ol>
-<li>
-<p>自定义变量：<strong>字符串(变量名):=字符串(变量值)</strong>，可通过$(变量名)替代所有的变量值。</p>
-<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment">#未使用自定义变量</span></span><br><span class="line"><span class="section">main:main.c</span></span><br><span class="line">	gcc main.c -o main</span><br><span class="line">----------------------------</span><br><span class="line"><span class="comment">#使用自定义变量</span></span><br><span class="line">target:=main</span><br><span class="line">src:=main.c</span><br><span class="line"><span class="variable">$(target)</span>:<span class="variable">$(src)</span></span><br><span class="line">	gcc <span class="variable">$(src)</span> -o <span class="variable">$(target)</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>自动变量：随规则的变化，同一个变量名对应不同的变量值</p>
-<table>
-<thead>
-<tr>
-<th>变量名</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>$@</td>
-<td>目标文件</td>
-</tr>
-<tr>
-<td>$&lt;</td>
-<td>第一个依赖文件</td>
-</tr>
-<tr>
-<td>$^</td>
-<td>所有的依赖文件，以空格分隔</td>
-</tr>
-<tr>
-<td>$?</td>
-<td>日期新于目标文件的所有相关文件列表，逗号分隔</td>
-</tr>
-<tr>
-<td>$(@D)</td>
-<td>目标文件的目录名部分</td>
-</tr>
-<tr>
-<td>$(@F)</td>
-<td>目标文件的文件名部分</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p>预定义的变量：有预定义的变量，可以手动其修改含义</p>
-<table>
-<thead>
-<tr>
-<th>变量名</th>
-<th>含义</th>
-<th>变量值</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>AR</td>
-<td>打包库文件</td>
-<td>ar</td>
-</tr>
-<tr>
-<td>AS</td>
-<td>汇编程序</td>
-<td>as</td>
-</tr>
-<tr>
-<td>CC</td>
-<td>C编译器</td>
-<td>cc</td>
-</tr>
-<tr>
-<td>CPP</td>
-<td>CPP编译器</td>
-<td>$(CC) -E</td>
-</tr>
-<tr>
-<td>CXX</td>
-<td>C++编译器</td>
-<td>g++</td>
-</tr>
-<tr>
-<td>RM</td>
-<td>删除</td>
-<td>rm -f</td>
-</tr>
-</tbody>
-</table>
-</li>
-</ol>
-</li>
-<li>
-<p>wildcard：从文件系统中提取文件名(按照通配符规则)</p>
-<p>subst/patsubst：文本替换/按格式文本替换</p>
-   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> <span class="comment">#srcs为目录下所有.c文件</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">var:=<span class="string">&quot;How are you&quot;</span></span><br><span class="line">newvar:=<span class="variable">$(<span class="built_in">patsubst</span> you,me,<span class="variable">$(var)</span>)</span> <span class="comment">#将var中所有的you替换成me</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> </span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span> <span class="comment">#将srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><strong>%<strong>匹配字符：从上一个规则的</strong>依赖条件</strong>中按照匹配格式匹配内容，每次匹配成功就生成一个规则，<strong>%<strong>表示匹配得到的内容。(在变量引用时使用</strong>%</strong>)</p>
-<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="section">srcs:$(wildcard *.c) </span></span><br><span class="line"><span class="section">objs:$(patsubst %.c,%,<span class="variable">$(srcs)</span>) #匹配srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>for循环：</p>
-   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:</span></span><br><span class="line">    for i in <span class="variable">$(exes)</span>; do <span class="variable">$(CC)</span> $$i.c -o $$i; done <span class="comment">#$$i代表$(exes)中的内容</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>伪目标：以不存在的文件作为命令的目标(每次make都会执行)，常用<code>.PHONY</code>来区分伪目标方便阅读。</p>
-</li>
-<li>
-<p>增量编译：</p>
-   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span></span><br><span class="line">final:=main</span><br><span class="line"><span class="section">all:<span class="variable">$(final)</span></span></span><br><span class="line"><span class="variable">$(final)</span>:<span class="variable">$(objs)</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="section">%.o:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> -c <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(objs)</span> <span class="variable">$(final)</span></span><br><span class="line"><span class="section">rebuild:clean all </span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>编译所有.c文件得到可执行文件</p>
-   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:<span class="variable">$(exes)</span></span></span><br><span class="line"><span class="section">%:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(exes)</span></span><br><span class="line"><span class="section">rebuild:clean all</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-]]></content>
-      <tags>
-        <tag>Makefile</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>C语言学习整理01</title>
     <url>/2021/06/29/C%E8%AF%AD%E8%A8%80%E5%AD%A6%E4%B9%A0%E6%95%B4%E7%90%8601/</url>
     <content><![CDATA[<h1 id="c语言学习整理01"><a class="markdownIt-Anchor" href="#c语言学习整理01"></a> C语言学习整理01</h1>
@@ -263,6 +136,133 @@
       </tags>
   </entry>
   <entry>
+    <title>Makefile学习</title>
+    <url>/2021/07/10/Makefile%E5%AD%A6%E4%B9%A0/</url>
+    <content><![CDATA[<h1 id="makefile"><a class="markdownIt-Anchor" href="#makefile"></a> Makefile</h1>
+<h4 id="功能通过makefile文件来描述源程序之间的相互关系并自动维护编译工作"><a class="markdownIt-Anchor" href="#功能通过makefile文件来描述源程序之间的相互关系并自动维护编译工作"></a> 功能：通过makefile文件来描述源程序之间的相互关系并自动维护编译工作。</h4>
+<span id="more"></span>
+<ol>
+<li>
+<p>Makefile的变量：</p>
+<ol>
+<li>
+<p>自定义变量：<strong>字符串(变量名):=字符串(变量值)</strong>，可通过$(变量名)替代所有的变量值。</p>
+<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment">#未使用自定义变量</span></span><br><span class="line"><span class="section">main:main.c</span></span><br><span class="line">	gcc main.c -o main</span><br><span class="line">----------------------------</span><br><span class="line"><span class="comment">#使用自定义变量</span></span><br><span class="line">target:=main</span><br><span class="line">src:=main.c</span><br><span class="line"><span class="variable">$(target)</span>:<span class="variable">$(src)</span></span><br><span class="line">	gcc <span class="variable">$(src)</span> -o <span class="variable">$(target)</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>自动变量：随规则的变化，同一个变量名对应不同的变量值</p>
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$@</td>
+<td>目标文件</td>
+</tr>
+<tr>
+<td>$&lt;</td>
+<td>第一个依赖文件</td>
+</tr>
+<tr>
+<td>$^</td>
+<td>所有的依赖文件，以空格分隔</td>
+</tr>
+<tr>
+<td>$?</td>
+<td>日期新于目标文件的所有相关文件列表，逗号分隔</td>
+</tr>
+<tr>
+<td>$(@D)</td>
+<td>目标文件的目录名部分</td>
+</tr>
+<tr>
+<td>$(@F)</td>
+<td>目标文件的文件名部分</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>预定义的变量：有预定义的变量，可以手动其修改含义</p>
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>含义</th>
+<th>变量值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AR</td>
+<td>打包库文件</td>
+<td>ar</td>
+</tr>
+<tr>
+<td>AS</td>
+<td>汇编程序</td>
+<td>as</td>
+</tr>
+<tr>
+<td>CC</td>
+<td>C编译器</td>
+<td>cc</td>
+</tr>
+<tr>
+<td>CPP</td>
+<td>CPP编译器</td>
+<td>$(CC) -E</td>
+</tr>
+<tr>
+<td>CXX</td>
+<td>C++编译器</td>
+<td>g++</td>
+</tr>
+<tr>
+<td>RM</td>
+<td>删除</td>
+<td>rm -f</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ol>
+</li>
+<li>
+<p>wildcard：从文件系统中提取文件名(按照通配符规则)</p>
+<p>subst/patsubst：文本替换/按格式文本替换</p>
+   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> <span class="comment">#srcs为目录下所有.c文件</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">var:=<span class="string">&quot;How are you&quot;</span></span><br><span class="line">newvar:=<span class="variable">$(<span class="built_in">patsubst</span> you,me,<span class="variable">$(var)</span>)</span> <span class="comment">#将var中所有的you替换成me</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> </span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span> <span class="comment">#将srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>%<strong>匹配字符：从上一个规则的</strong>依赖条件</strong>中按照匹配格式匹配内容，每次匹配成功就生成一个规则，<strong>%<strong>表示匹配得到的内容。(在变量引用时使用</strong>%</strong>)</p>
+<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="section">srcs:$(wildcard *.c) </span></span><br><span class="line"><span class="section">objs:$(patsubst %.c,%,<span class="variable">$(srcs)</span>) #匹配srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>for循环：</p>
+   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:</span></span><br><span class="line">    for i in <span class="variable">$(exes)</span>; do <span class="variable">$(CC)</span> $$i.c -o $$i; done <span class="comment">#$$i代表$(exes)中的内容</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>伪目标：以不存在的文件作为命令的目标(每次make都会执行)，常用<code>.PHONY</code>来区分伪目标方便阅读。</p>
+</li>
+<li>
+<p>增量编译：</p>
+   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span></span><br><span class="line">final:=main</span><br><span class="line"><span class="section">all:<span class="variable">$(final)</span></span></span><br><span class="line"><span class="variable">$(final)</span>:<span class="variable">$(objs)</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="section">%.o:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> -c <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(objs)</span> <span class="variable">$(final)</span></span><br><span class="line"><span class="section">rebuild:clean all </span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>编译所有.c文件得到可执行文件</p>
+   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:<span class="variable">$(exes)</span></span></span><br><span class="line"><span class="section">%:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(exes)</span></span><br><span class="line"><span class="section">rebuild:clean all</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>Makefile</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Markdown学习</title>
     <url>/2021/06/28/Markdown%E5%AD%A6%E4%B9%A0/</url>
     <content><![CDATA[<h1 id="markdown语法学习"><a class="markdownIt-Anchor" href="#markdown语法学习"></a> Markdown语法学习</h1>
@@ -336,26 +336,6 @@
       <tags>
         <tag>Markdown</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>Hello World</title>
-    <url>/2021/06/25/hello-world/</url>
-    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<span id="more"></span>
-<h2 id="quick-start"><a class="markdownIt-Anchor" href="#quick-start"></a> Quick Start</h2>
-<h3 id="create-a-new-post"><a class="markdownIt-Anchor" href="#create-a-new-post"></a> Create a new post</h3>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="run-server"><a class="markdownIt-Anchor" href="#run-server"></a> Run server</h3>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="generate-static-files"><a class="markdownIt-Anchor" href="#generate-static-files"></a> Generate static files</h3>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="deploy-to-remote-sites"><a class="markdownIt-Anchor" href="#deploy-to-remote-sites"></a> Deploy to remote sites</h3>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
   </entry>
   <entry>
     <title>进程间通信方式(1)-管道</title>
@@ -450,12 +430,38 @@
       </tags>
   </entry>
   <entry>
+    <title>Hello World</title>
+    <url>/2021/06/25/hello-world/</url>
+    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<span id="more"></span>
+<h2 id="quick-start"><a class="markdownIt-Anchor" href="#quick-start"></a> Quick Start</h2>
+<h3 id="create-a-new-post"><a class="markdownIt-Anchor" href="#create-a-new-post"></a> Create a new post</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="run-server"><a class="markdownIt-Anchor" href="#run-server"></a> Run server</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="generate-static-files"><a class="markdownIt-Anchor" href="#generate-static-files"></a> Generate static files</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="deploy-to-remote-sites"><a class="markdownIt-Anchor" href="#deploy-to-remote-sites"></a> Deploy to remote sites</h3>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>进程池</title>
     <url>/2021/07/12/%E8%BF%9B%E7%A8%8B%E6%B1%A0/</url>
     <content><![CDATA[<h1 id="进程池流程"><a class="markdownIt-Anchor" href="#进程池流程"></a> 进程池流程</h1>
-<h2 id="目的实现多个客户端同时访问服务器获得服务本文例子为下载文件"><a class="markdownIt-Anchor" href="#目的实现多个客户端同时访问服务器获得服务本文例子为下载文件"></a> 目的：实现多个客户端同时访问服务器获得服务(本文例子为下载文件)</h2>
+<ul>
+<li>
+<p>目的：实现多个客户端同时访问服务器获得服务(本文例子为下载文件)</p>
+</li>
+<li>
+<p>好处：1. 降低资源消耗；2. 提高响应速度；3. 提高进程的可管理性。</p>
+</li>
+</ul>
 <span id="more"></span>
-<h2 id="好处1-降低资源消耗2-提高响应速度3-提高进程的可管理性"><a class="markdownIt-Anchor" href="#好处1-降低资源消耗2-提高响应速度3-提高进程的可管理性"></a> 好处：1. 降低资源消耗；2. 提高响应速度；3. 提高进程的可管理性。</h2>
 <h2 id="主要工作流程"><a class="markdownIt-Anchor" href="#主要工作流程"></a> 主要工作流程：</h2>
 <ul>
 <li>父进程：
