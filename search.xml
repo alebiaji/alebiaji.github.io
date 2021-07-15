@@ -811,4 +811,197 @@
         <tag>C</tag>
       </tags>
   </entry>
+  <entry>
+    <title>MySQL学习</title>
+    <url>/2021/07/15/mysql%E6%95%B0%E6%8D%AE%E5%BA%93%E6%93%8D%E4%BD%9C/</url>
+    <content><![CDATA[<h1 id="数据库"><a class="markdownIt-Anchor" href="#数据库"></a> 数据库</h1>
+<ol>
+<li>
+<p>数据库是什么？</p>
+<p>数据库是一个实体，是保存和管理数据的“仓库”。</p>
+</li>
+<li>
+<p>为什么要用数据库？</p>
+<p>数据库是数据管理的技术和方法，它能更合适的组织数据，更方便的维护数据，更严密的控制数据，更有效的利用数据。</p>
+</li>
+</ol>
+<span id="more"></span>
+<h1 id="安装mysql数据库ubuntu-1804-lts"><a class="markdownIt-Anchor" href="#安装mysql数据库ubuntu-1804-lts"></a> 安装MySQL数据库（Ubuntu 18.04 LTS）</h1>
+<ol>
+<li>
+<p>从Ubuntu仓库中安装</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo apt-get update</span><br><span class="line">$ sudo apt-get install mysql-server mysql-client</span><br><span class="line"><span class="comment">#客户端依赖包</span></span><br><span class="line">$ sudo apt-get install libmysqlclient-dev</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>初始化配置</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo mysql_secure_installation</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>检查MySQL的服务状态</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ systemctl status mysql.service</span><br><span class="line"><span class="comment">#或者</span></span><br><span class="line">$ sudo service mysql status</span><br></pre></td></tr></table></figure>
+<p>Active: <font color="green">active (running)</font> 表示运行成功</p>
+</li>
+</ol>
+<h1 id="mysql常用的数据类型"><a class="markdownIt-Anchor" href="#mysql常用的数据类型"></a> MySQL常用的数据类型</h1>
+<img src="/images/MySQL常用数据类型.png" alt="img MySQL常用数据类型" style="zoom: 60%;">
+<h1 id="mysql部分操作"><a class="markdownIt-Anchor" href="#mysql部分操作"></a> MySQL部分操作</h1>
+<ol>
+<li>
+<p>进入数据库</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ sudo mysql -u root -p</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>退出数据库</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#1</span><br><span class="line">mysql&gt; quit;</span><br><span class="line">#2</span><br><span class="line">mysql&gt; exit;</span><br><span class="line">#3</span><br><span class="line">CTRL-D</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>显示所有数据库</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; show databases;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>创建数据库</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; create database school;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>修改数据库的字符集</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; alter database school character set utf8;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>删除数据库</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; drop database school;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>使用数据库</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; use school;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>创建表</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; create table student (</span><br><span class="line">    -&gt; id int,</span><br><span class="line">    -&gt; name char(20),</span><br><span class="line">    -&gt; age int,</span><br><span class="line">    -&gt; score float);</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查看表结构信息</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; show create table student;</span><br><span class="line">#或者</span><br><span class="line">mysql&gt; desc student;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查看当前数据库中所有表</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; show tables;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>修改表，表的字段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">#change可以改变列名，同样可以改变类型， 但是不能单独去修改类型， modify只可以修改类型，不能修改名字</span><br><span class="line">mysql&gt; alter table student modify score int;</span><br><span class="line">mysql&gt; alter table student change name mingzi int;</span><br><span class="line">mysql&gt; alter table student change mingzi name varchar(20);</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>修改表名</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; rename table student to stu;</span><br><span class="line">mysql&gt; alter table stu rename to student;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>在表中插入字段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; alter table student add english float;</span><br><span class="line">mysql&gt; alter table student add chinese float first;# 插入到第一列</span><br><span class="line">mysql&gt; alter table student add cs float after math;# 插入到math后面</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>删除表中的字段</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; alter table student drop cs;</span><br><span class="line">mysql&gt; alter table student drop english;</span><br><span class="line">mysql&gt; alter table student drop chinese;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>向表中插入数据</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; insert into student (id, name, age, math) </span><br><span class="line">    -&gt; values (1, &#x27;zhangsan&#x27;, 18, 80);</span><br><span class="line">#也可以向表中插入部分数据</span><br><span class="line">mysql&gt; insert into student (id, name, math) </span><br><span class="line">    -&gt; values (2, &#x27;libowen&#x27;, 100);</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查询表中的数据</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student;</span><br><span class="line">+------+----------+------+------+</span><br><span class="line">| id   | name     | age  | math |</span><br><span class="line">+------+----------+------+------+</span><br><span class="line">|    1 | zhangsan |   18 |   80 |</span><br><span class="line">|    2 | libowen  | NULL |  100 |</span><br><span class="line">+------+----------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>不写列名插入数据，必须把所有值按顺序赋值。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; insert into student values (3, &#x27;lile&#x27;, 24, 59);</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>快速插入多条数据</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; insert into student values (4, &#x27;xienan&#x27;, 18, 90), (5, &#x27;gougou&#x27;, 23, 5);</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>修改表中元素值，更新数据</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; alter table student add art float;</span><br><span class="line">mysql&gt; update student set art = 100 where id = 4;</span><br><span class="line">mysql&gt; update student set age = 23 where id = 2;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>一次更新多个数据</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; update student set age = 3, math = 10, art = 20 where name = &#x27;gougou&#x27;;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>删除表中的数据</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; delete from student where name = &#x27;zhangsan&#x27;;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>可以对表中插入空值</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; insert into student (id) values (NULL);</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>删除表中的空值</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; delete from student where id is NULL;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查询表中单个数据的信息</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select name from student;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查询表中部分数据的情况</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select name, art from student;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>对查询结果去重</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; update student set age = 24 where name = &#x27;gougou&#x27;;</span><br><span class="line">mysql&gt; select distinct age from student;</span><br><span class="line">+------+</span><br><span class="line">| age  |</span><br><span class="line">+------+</span><br><span class="line">|   23 |</span><br><span class="line">|   24 |</span><br><span class="line">|   18 |</span><br><span class="line">+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>对查询结果做表达式运算</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select name, math + 20 from student;</span><br><span class="line">+---------+-----------+</span><br><span class="line">| name    | math + 20 |</span><br><span class="line">+---------+-----------+</span><br><span class="line">| libowen |       120 |</span><br><span class="line">| lile    |        79 |</span><br><span class="line">| xienan  |       110 |</span><br><span class="line">| gougou  |        30 |</span><br><span class="line">+---------+-----------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>对表达式取别名</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select name, math + 20 as math2 from student;</span><br><span class="line">+---------+-------+</span><br><span class="line">| name    | math2 |</span><br><span class="line">+---------+-------+</span><br><span class="line">| libowen |   120 |</span><br><span class="line">| lile    |    79 |</span><br><span class="line">| xienan  |   110 |</span><br><span class="line">| gougou  |    30 |</span><br><span class="line">+---------+-------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查询某些特定的列</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student where age &gt; 18;</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">|    3 | lile    |   24 |   59 | NULL |</span><br><span class="line">|    5 | gougou  |   24 |   10 |   20 |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from student where age &lt; 24;</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">|    4 | xienan  |   18 |   90 |  100 |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from student where age != 18;</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">|    3 | lile    |   24 |   59 | NULL |</span><br><span class="line">|    5 | gougou  |   24 |   10 |   20 |</span><br><span class="line">+------+---------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查询某范围的数据between …  and … 查询范围是闭区间</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student where math between 60 and 100;</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">|    4 | xienan  |   18 |   90 |  100 |</span><br><span class="line">+------+---------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查询集合中的数据<code>in（set）</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student where age in (18, 24);</span><br><span class="line">+------+--------+------+------+------+</span><br><span class="line">| id   | name   | age  | math | art  |</span><br><span class="line">+------+--------+------+------+------+</span><br><span class="line">|    3 | lile   |   24 |   59 | NULL |</span><br><span class="line">|    4 | xienan |   18 |   90 |  100 |</span><br><span class="line">|    5 | gougou |   24 |   10 |   20 |</span><br><span class="line">+------+--------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>模糊查询<code>like</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student where name like &#x27;%nan&#x27;;</span><br><span class="line">+------+--------+------+------+------+</span><br><span class="line">| id   | name   | age  | math | art  |</span><br><span class="line">+------+--------+------+------+------+</span><br><span class="line">|    4 | xienan |   18 |   90 |  100 |</span><br><span class="line">+------+--------+------+------+------+</span><br><span class="line"></span><br><span class="line">mysql&gt; select * from student where name like &#x27;%l_&#x27;;</span><br><span class="line">+------+------+------+------+------+</span><br><span class="line">| id   | name | age  | math | art  |</span><br><span class="line">+------+------+------+------+------+</span><br><span class="line">|    3 | lile |   24 |   59 | NULL |</span><br><span class="line">+------+------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查询多个条件同时成立<code>and</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student where name = &#x27;gougou&#x27; and age = 24;</span><br><span class="line">+------+--------+------+------+------+</span><br><span class="line">| id   | name   | age  | math | art  |</span><br><span class="line">+------+--------+------+------+------+</span><br><span class="line">|    5 | gougou |   24 |   10 |   20 |</span><br><span class="line">+------+--------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查询多个条件任一成立<code>or</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student where name = &#x27;gougou&#x27; or age = 23;</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">|    5 | gougou  |   24 |   10 |   20 |</span><br><span class="line">+------+---------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>查询条件不成立的项</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student where not (name = &#x27;xienan&#x27;);</span><br><span class="line">mysql&gt; select * from student where not name = &#x27;xienan&#x27;;</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">|    3 | lile    |   24 |   59 | NULL |</span><br><span class="line">|    5 | gougou  |   24 |   10 |   20 |</span><br><span class="line">+------+---------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>对查询结果排序（默认升序）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student order by age;</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    4 | xienan  |   18 |   90 |  100 |</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">|    3 | lile    |   24 |   59 | NULL |</span><br><span class="line">|    5 | gougou  |   24 |   10 |   20 |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">#逆序</span><br><span class="line">mysql&gt; select * from student order by age desc;</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    3 | lile    |   24 |   59 | NULL |</span><br><span class="line">|    5 | gougou  |   24 |   10 |   20 |</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">|    4 | xienan  |   18 |   90 |  100 |</span><br><span class="line">+------+---------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>显示固定数量的数据<code>limit</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student order by age desc limit 3;</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    3 | lile    |   24 |   59 | NULL |</span><br><span class="line">|    5 | gougou  |   24 |   10 |   20 |</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">+------+---------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>对查询结果进行偏移<code>offset</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">mysql&gt; select * from student order by age desc limit 1 offset 2;</span><br><span class="line">#像后偏移了两个数据</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">| id   | name    | age  | math | art  |</span><br><span class="line">+------+---------+------+------+------+</span><br><span class="line">|    2 | libowen |   23 |  100 | NULL |</span><br><span class="line">+------+---------+------+------+------+</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>MySQL</tag>
+      </tags>
+  </entry>
 </search>
