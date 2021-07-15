@@ -173,6 +173,123 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://alebiaji.top/2021/07/15/%E7%BA%BF%E7%A8%8B%E6%B1%A0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Alebiaji">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ale's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2021/07/15/%E7%BA%BF%E7%A8%8B%E6%B1%A0/" class="post-title-link" itemprop="url">线程池</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2021-07-15 18:10:20 / Modified: 19:03:09" itemprop="dateCreated datePublished" datetime="2021-07-15T18:10:20+08:00">2021-07-15</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h1 id="线程池"><a class="markdownIt-Anchor" href="#线程池"></a> 线程池</h1>
+<p>使用线程池的好处：</p>
+<ol>
+<li>降低资源的消耗，多个线程能共享同一个进程的内存空间。</li>
+<li>提高响应速度，任务来时能直接响应不需要等待。</li>
+<li>提高现成的可管理性，线程不能无限制创建，有数量限制。
+<ul>
+<li>对于IO密集型的任务：线程数量一般等于CPU核心数的二倍。</li>
+<li>对于CPU密集型的任务：线程的数量一般等于CPU核心数+1。</li>
+</ul>
+</li>
+</ol>
+<h2 id="程序运行流程"><a class="markdownIt-Anchor" href="#程序运行流程"></a> 程序运行流程</h2>
+<ol>
+<li>主线程：
+<ol>
+<li>创建线程池，初始化。</li>
+<li>线程池启动，创建制定数量的线程。</li>
+<li>服务器绑定tcp通信套接字。</li>
+<li>创建epoll，并将需要监听的tcp通信套接字放入epoll。</li>
+<li><code>accept()</code>函数等待客户端连接。</li>
+<li>接收客户端连接，创建任务队列中的任务节点，将用于与客户端连接的通信描述符存入任务节点，再将任务节点放入任务队列，队列长度＋1。并激发所有的条件变量。</li>
+<li>回到步骤5等待下一次客户端请求连接。</li>
+</ol>
+</li>
+<li>子线程：
+<ol>
+<li>队列上锁，进入<code>pthread_cond_wait()</code>函数。</li>
+<li>等待主线程激发。</li>
+<li>子线程被激发，抢到任务队列中的任务节点，任务节点出队，队列长度－1，解锁。</li>
+<li>用任务节点中的文件描述符服务客户端，服务完关闭文件描述符。</li>
+<li>回到步骤1等待下一次任务。</li>
+</ol>
+</li>
+</ol>
+<h2 id="程序的退出"><a class="markdownIt-Anchor" href="#程序的退出"></a> 程序的退出</h2>
+<ol>
+<li>主线程：
+<ol>
+<li>收到退出信号，通过信号处理函数对退出管道进行写数据。</li>
+<li>epoll监听到，主线程将任务队列中的退出标识位置1，并激发所有条件变量。</li>
+<li>等到所有子线程退出后主线程再退出。</li>
+</ol>
+</li>
+<li>子线程：
+<ol>
+<li>队列上锁，进入<code>pthread_cond_wait()</code>函数。</li>
+<li>等待主线程激发。</li>
+<li>子线程被激发，发现任务队列中推出标识位为1，进行线程的退出。</li>
+</ol>
+</li>
+</ol>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/07/15/%E7%BA%BF%E7%A8%8B%E6%B1%A0/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
     <link itemprop="mainEntityOfPage" href="http://alebiaji.top/2021/07/14/%E7%BA%BF%E7%A8%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -591,78 +708,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/06/28/Markdown%E5%AD%A6%E4%B9%A0/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
-    <link itemprop="mainEntityOfPage" href="http://alebiaji.top/2021/06/25/hello-world/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="Alebiaji">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Ale's Blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2021/06/25/hello-world/" class="post-title-link" itemprop="url">Hello World</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2021-06-25 09:23:26" itemprop="dateCreated datePublished" datetime="2021-06-25T09:23:26+08:00">2021-06-25</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-06-30 15:02:00" itemprop="dateModified" datetime="2021-06-30T15:02:00+08:00">2021-06-30</time>
-              </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Welcome to <a target="_blank" rel="noopener" href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a target="_blank" rel="noopener" href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a target="_blank" rel="noopener" href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a target="_blank" rel="noopener" href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2021/06/25/hello-world/#more" rel="contents">
                 Read more &raquo;
               </a>
             </div>
