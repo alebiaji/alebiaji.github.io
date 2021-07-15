@@ -1,6 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Makefile学习</title>
+    <url>/2021/07/10/Makefile%E5%AD%A6%E4%B9%A0/</url>
+    <content><![CDATA[<h1 id="makefile"><a class="markdownIt-Anchor" href="#makefile"></a> Makefile</h1>
+<h4 id="功能通过makefile文件来描述源程序之间的相互关系并自动维护编译工作"><a class="markdownIt-Anchor" href="#功能通过makefile文件来描述源程序之间的相互关系并自动维护编译工作"></a> 功能：通过makefile文件来描述源程序之间的相互关系并自动维护编译工作。</h4>
+<span id="more"></span>
+<ol>
+<li>
+<p>Makefile的变量：</p>
+<ol>
+<li>
+<p>自定义变量：<strong>字符串(变量名):=字符串(变量值)</strong>，可通过$(变量名)替代所有的变量值。</p>
+<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment">#未使用自定义变量</span></span><br><span class="line"><span class="section">main:main.c</span></span><br><span class="line">	gcc main.c -o main</span><br><span class="line">----------------------------</span><br><span class="line"><span class="comment">#使用自定义变量</span></span><br><span class="line">target:=main</span><br><span class="line">src:=main.c</span><br><span class="line"><span class="variable">$(target)</span>:<span class="variable">$(src)</span></span><br><span class="line">	gcc <span class="variable">$(src)</span> -o <span class="variable">$(target)</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>自动变量：随规则的变化，同一个变量名对应不同的变量值</p>
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$@</td>
+<td>目标文件</td>
+</tr>
+<tr>
+<td>$&lt;</td>
+<td>第一个依赖文件</td>
+</tr>
+<tr>
+<td>$^</td>
+<td>所有的依赖文件，以空格分隔</td>
+</tr>
+<tr>
+<td>$?</td>
+<td>日期新于目标文件的所有相关文件列表，逗号分隔</td>
+</tr>
+<tr>
+<td>$(@D)</td>
+<td>目标文件的目录名部分</td>
+</tr>
+<tr>
+<td>$(@F)</td>
+<td>目标文件的文件名部分</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p>预定义的变量：有预定义的变量，可以手动其修改含义</p>
+<table>
+<thead>
+<tr>
+<th>变量名</th>
+<th>含义</th>
+<th>变量值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AR</td>
+<td>打包库文件</td>
+<td>ar</td>
+</tr>
+<tr>
+<td>AS</td>
+<td>汇编程序</td>
+<td>as</td>
+</tr>
+<tr>
+<td>CC</td>
+<td>C编译器</td>
+<td>cc</td>
+</tr>
+<tr>
+<td>CPP</td>
+<td>CPP编译器</td>
+<td>$(CC) -E</td>
+</tr>
+<tr>
+<td>CXX</td>
+<td>C++编译器</td>
+<td>g++</td>
+</tr>
+<tr>
+<td>RM</td>
+<td>删除</td>
+<td>rm -f</td>
+</tr>
+</tbody>
+</table>
+</li>
+</ol>
+</li>
+<li>
+<p>wildcard：从文件系统中提取文件名(按照通配符规则)</p>
+<p>subst/patsubst：文本替换/按格式文本替换</p>
+   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> <span class="comment">#srcs为目录下所有.c文件</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">var:=<span class="string">&quot;How are you&quot;</span></span><br><span class="line">newvar:=<span class="variable">$(<span class="built_in">patsubst</span> you,me,<span class="variable">$(var)</span>)</span> <span class="comment">#将var中所有的you替换成me</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> </span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span> <span class="comment">#将srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p><strong>%<strong>匹配字符：从上一个规则的</strong>依赖条件</strong>中按照匹配格式匹配内容，每次匹配成功就生成一个规则，<strong>%<strong>表示匹配得到的内容。(在变量引用时使用</strong>%</strong>)</p>
+<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="section">srcs:$(wildcard *.c) </span></span><br><span class="line"><span class="section">objs:$(patsubst %.c,%,<span class="variable">$(srcs)</span>) #匹配srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>for循环：</p>
+   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:</span></span><br><span class="line">    for i in <span class="variable">$(exes)</span>; do <span class="variable">$(CC)</span> $$i.c -o $$i; done <span class="comment">#$$i代表$(exes)中的内容</span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>伪目标：以不存在的文件作为命令的目标(每次make都会执行)，常用<code>.PHONY</code>来区分伪目标方便阅读。</p>
+</li>
+<li>
+<p>增量编译：</p>
+   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span></span><br><span class="line">final:=main</span><br><span class="line"><span class="section">all:<span class="variable">$(final)</span></span></span><br><span class="line"><span class="variable">$(final)</span>:<span class="variable">$(objs)</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="section">%.o:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> -c <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(objs)</span> <span class="variable">$(final)</span></span><br><span class="line"><span class="section">rebuild:clean all </span></span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>编译所有.c文件得到可执行文件</p>
+   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:<span class="variable">$(exes)</span></span></span><br><span class="line"><span class="section">%:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(exes)</span></span><br><span class="line"><span class="section">rebuild:clean all</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>Makefile</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>C语言学习整理01</title>
     <url>/2021/06/29/C%E8%AF%AD%E8%A8%80%E5%AD%A6%E4%B9%A0%E6%95%B4%E7%90%8601/</url>
     <content><![CDATA[<h1 id="c语言学习整理01"><a class="markdownIt-Anchor" href="#c语言学习整理01"></a> C语言学习整理01</h1>
@@ -133,133 +260,6 @@
       <tags>
         <tag>C</tag>
         <tag>C++</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Makefile学习</title>
-    <url>/2021/07/10/Makefile%E5%AD%A6%E4%B9%A0/</url>
-    <content><![CDATA[<h1 id="makefile"><a class="markdownIt-Anchor" href="#makefile"></a> Makefile</h1>
-<h4 id="功能通过makefile文件来描述源程序之间的相互关系并自动维护编译工作"><a class="markdownIt-Anchor" href="#功能通过makefile文件来描述源程序之间的相互关系并自动维护编译工作"></a> 功能：通过makefile文件来描述源程序之间的相互关系并自动维护编译工作。</h4>
-<span id="more"></span>
-<ol>
-<li>
-<p>Makefile的变量：</p>
-<ol>
-<li>
-<p>自定义变量：<strong>字符串(变量名):=字符串(变量值)</strong>，可通过$(变量名)替代所有的变量值。</p>
-<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="comment">#未使用自定义变量</span></span><br><span class="line"><span class="section">main:main.c</span></span><br><span class="line">	gcc main.c -o main</span><br><span class="line">----------------------------</span><br><span class="line"><span class="comment">#使用自定义变量</span></span><br><span class="line">target:=main</span><br><span class="line">src:=main.c</span><br><span class="line"><span class="variable">$(target)</span>:<span class="variable">$(src)</span></span><br><span class="line">	gcc <span class="variable">$(src)</span> -o <span class="variable">$(target)</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>自动变量：随规则的变化，同一个变量名对应不同的变量值</p>
-<table>
-<thead>
-<tr>
-<th>变量名</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>$@</td>
-<td>目标文件</td>
-</tr>
-<tr>
-<td>$&lt;</td>
-<td>第一个依赖文件</td>
-</tr>
-<tr>
-<td>$^</td>
-<td>所有的依赖文件，以空格分隔</td>
-</tr>
-<tr>
-<td>$?</td>
-<td>日期新于目标文件的所有相关文件列表，逗号分隔</td>
-</tr>
-<tr>
-<td>$(@D)</td>
-<td>目标文件的目录名部分</td>
-</tr>
-<tr>
-<td>$(@F)</td>
-<td>目标文件的文件名部分</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p>预定义的变量：有预定义的变量，可以手动其修改含义</p>
-<table>
-<thead>
-<tr>
-<th>变量名</th>
-<th>含义</th>
-<th>变量值</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>AR</td>
-<td>打包库文件</td>
-<td>ar</td>
-</tr>
-<tr>
-<td>AS</td>
-<td>汇编程序</td>
-<td>as</td>
-</tr>
-<tr>
-<td>CC</td>
-<td>C编译器</td>
-<td>cc</td>
-</tr>
-<tr>
-<td>CPP</td>
-<td>CPP编译器</td>
-<td>$(CC) -E</td>
-</tr>
-<tr>
-<td>CXX</td>
-<td>C++编译器</td>
-<td>g++</td>
-</tr>
-<tr>
-<td>RM</td>
-<td>删除</td>
-<td>rm -f</td>
-</tr>
-</tbody>
-</table>
-</li>
-</ol>
-</li>
-<li>
-<p>wildcard：从文件系统中提取文件名(按照通配符规则)</p>
-<p>subst/patsubst：文本替换/按格式文本替换</p>
-   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> <span class="comment">#srcs为目录下所有.c文件</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">var:=<span class="string">&quot;How are you&quot;</span></span><br><span class="line">newvar:=<span class="variable">$(<span class="built_in">patsubst</span> you,me,<span class="variable">$(var)</span>)</span> <span class="comment">#将var中所有的you替换成me</span></span><br><span class="line">-----------------------------------------</span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span> </span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span> <span class="comment">#将srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p><strong>%<strong>匹配字符：从上一个规则的</strong>依赖条件</strong>中按照匹配格式匹配内容，每次匹配成功就生成一个规则，<strong>%<strong>表示匹配得到的内容。(在变量引用时使用</strong>%</strong>)</p>
-<figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line"><span class="section">srcs:$(wildcard *.c) </span></span><br><span class="line"><span class="section">objs:$(patsubst %.c,%,<span class="variable">$(srcs)</span>) #匹配srcs中所有的.c文件替换成.o文件</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>for循环：</p>
-   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:</span></span><br><span class="line">    for i in <span class="variable">$(exes)</span>; do <span class="variable">$(CC)</span> $$i.c -o $$i; done <span class="comment">#$$i代表$(exes)中的内容</span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>伪目标：以不存在的文件作为命令的目标(每次make都会执行)，常用<code>.PHONY</code>来区分伪目标方便阅读。</p>
-</li>
-<li>
-<p>增量编译：</p>
-   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">objs:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%.o,<span class="variable">$(srcs)</span>)</span></span><br><span class="line">final:=main</span><br><span class="line"><span class="section">all:<span class="variable">$(final)</span></span></span><br><span class="line"><span class="variable">$(final)</span>:<span class="variable">$(objs)</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="section">%.o:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> -c <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(objs)</span> <span class="variable">$(final)</span></span><br><span class="line"><span class="section">rebuild:clean all </span></span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>编译所有.c文件得到可执行文件</p>
-   <figure class="highlight makefile"><table><tr><td class="code"><pre><span class="line">CC:=gcc                                                                        </span><br><span class="line">srcs:=<span class="variable">$(<span class="built_in">wildcard</span> *.c)</span></span><br><span class="line">exes:=<span class="variable">$(<span class="built_in">patsubst</span> %.c,%,<span class="variable">$(srcs)</span>)</span></span><br><span class="line"><span class="section">all:<span class="variable">$(exes)</span></span></span><br><span class="line"><span class="section">%:%.c</span></span><br><span class="line">    <span class="variable">$(CC)</span> <span class="variable">$^</span> -o <span class="variable">$@</span></span><br><span class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>:rebuild clean</span></span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">    <span class="variable">$(RM)</span> <span class="variable">$(exes)</span></span><br><span class="line"><span class="section">rebuild:clean all</span></span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-]]></content>
-      <tags>
-        <tag>Makefile</tag>
       </tags>
   </entry>
   <entry>
@@ -430,6 +430,104 @@
       </tags>
   </entry>
   <entry>
+    <title>线程</title>
+    <url>/2021/07/14/%E7%BA%BF%E7%A8%8B/</url>
+    <content><![CDATA[<h1 id="进程与线程的特点与区别"><a class="markdownIt-Anchor" href="#进程与线程的特点与区别"></a> 进程与线程的特点与区别</h1>
+<ol>
+<li>进程：资源分配的基本单位（最小单位），拥有自己独立的资源，如自己独立的数据段、代码段和堆栈段，所以在CPU进行进程切换时需要保存大量的上下文<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>，需要大量的时间开销。<strong>为了减少这一时间开销，因此引入了线程。</strong>
+<ul>
+<li>创建：<code>fork()</code></li>
+<li>退出：<code>exit()</code></li>
+<li>等待：<code>wait()</code></li>
+</ul>
+</li>
+<li>线程：CPU调度的基本单位，一个进程至少拥有一个线程。一个进程中的多个线程会共享该进程的地址空间。线程只拥有少量的栈空间。线程的缺点：不利于资源的管理和保护<sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup>。
+<ul>
+<li>创建：<code>pthread_create()</code></li>
+<li>退出：<code>pthread_exit()</code></li>
+<li>等待：<code>pthread_join()</code></li>
+</ul>
+<span id="more"></span>
+</li>
+<li>用比喻理解两者关系：进程就好比一个学校的某一间宿舍，线程就好比该宿舍中的某个人。</li>
+<li>查看进程相关信息的命令：<code>ps -elf</code></li>
+<li>查看线程相关信息的命令：<code>ps -elLf</code>（查看的时核心级线程id）</li>
+</ol>
+<h1 id="线程的种类"><a class="markdownIt-Anchor" href="#线程的种类"></a> 线程的种类</h1>
+<ol>
+<li>用户级：用户自己创建的线程。</li>
+<li>核心级：CPU实际运行的线程。</li>
+</ol>
+<h1 id="线程的一些操作"><a class="markdownIt-Anchor" href="#线程的一些操作"></a> 线程的一些操作</h1>
+<ol>
+<li>
+<p>线程的创建：<code>int pthread_create(pthread_t *thread, const pthread_attr_t attr, void *(*start_routine)(void *), void *arg)</code></p>
+<ul>
+<li>
+<p>返回值：成功返回0，失败返回错误码。</p>
+</li>
+<li>
+<p>参数1：线程id。</p>
+</li>
+<li>
+<p>参数2：线程的属性，没有特殊设置填NULL。</p>
+</li>
+<li>
+<p>参数3：线程的处理函数，注意函数类型为void *型。</p>
+</li>
+<li>
+<p>参数4：线程处理函数的参数。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>线程的等待：<code>int pthread_join(pthread_t thread, void **retval)</code></p>
+<ul>
+<li>返回值：成功返回0，失败返回错误码。</li>
+<li>参数1：等待退出的线程id。</li>
+<li>参数2：接收子线程的退出，可以接收指针类型的退出状态，也可以接收long类型的变量。</li>
+</ul>
+</li>
+<li>
+<p>线程的退出：<code>int pthread_exit(void *retval)</code></p>
+<ul>
+<li>返回值：使用函数的返回值作为线程的退出状态。（函数说明直译的，一般没啥用）</li>
+<li>参数：指向线程thread的返回值，一般填NULL。</li>
+</ul>
+</li>
+<li>
+<p>线程id的获取：<code>pthread_t pthread_self(void)</code>，永远不会失败，成功返回线程id。</p>
+</li>
+<li>
+<p>线程的取消：</p>
+<ol>
+<li>线程可以自己调用线程退出函数退出，也可以被其他线程杀掉，被其他线程杀掉的方式就叫做线程的取消。</li>
+<li>被杀掉的线程可以选择自己如何处理这个信号，如：忽略、立即终止、运行到<strong>取消点</strong>后终止。</li>
+<li>取消点：就是一些特殊函数：一般的阻塞性函数都是取消点，非阻塞性函数也有可能是取消点。</li>
+<li>线程取消函数：<code>int pthread_cancel(pthread_t thread)</code>
+<ul>
+<li>返回值：成功返回0，失败返回错误码。</li>
+<li>想要cancel掉的线程id。</li>
+</ul>
+</li>
+</ol>
+</li>
+</ol>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1" class="footnote-item"><p>—个进程的上下文(context)包括进程的状态、有关变量和数据结构的值、机器寄存器的值和PCB以及有关程序、数据等。一个进程的执行是在进程的上下文中执行。当正在执行的进程由于某种原因要让出处理机时，系统要做进程上下文切换，以使另一个进程得以执行。当进行上下文切换时点统要首先检查是否允许做上下文切换(在有些情况下，上下文切换是不允许的，例如系统正在执行某个不允许中断的原语时)。然后，系统要保留有关被切换进程的足够信息，以便以后切换回该进程时，顺利恢复该进程的执行。在系统保留了CPU现场之后，调度程序选择一个新的处于就绪状态的进程、并装配该进程的上下文，使CPU的控制权掌握在被选中进程手中。 <a href="#fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn2" class="footnote-item"><p>线程上锁后如果崩溃了，那么资源无法得到释放，其他线程都无法继续正常执行 <a href="#fnref2" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+]]></content>
+      <tags>
+        <tag>C</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>线程池</title>
     <url>/2021/07/15/%E7%BA%BF%E7%A8%8B%E6%B1%A0/</url>
     <content><![CDATA[<h1 id="线程池"><a class="markdownIt-Anchor" href="#线程池"></a> 线程池</h1>
@@ -535,104 +633,6 @@
       <tags>
         <tag>C</tag>
         <tag>Linux</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>线程</title>
-    <url>/2021/07/14/%E7%BA%BF%E7%A8%8B/</url>
-    <content><![CDATA[<h1 id="进程与线程的特点与区别"><a class="markdownIt-Anchor" href="#进程与线程的特点与区别"></a> 进程与线程的特点与区别</h1>
-<ol>
-<li>进程：资源分配的基本单位（最小单位），拥有自己独立的资源，如自己独立的数据段、代码段和堆栈段，所以在CPU进行进程切换时需要保存大量的上下文<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>，需要大量的时间开销。<strong>为了减少这一时间开销，因此引入了线程。</strong>
-<ul>
-<li>创建：<code>fork()</code></li>
-<li>退出：<code>exit()</code></li>
-<li>等待：<code>wait()</code></li>
-</ul>
-</li>
-<li>线程：CPU调度的基本单位，一个进程至少拥有一个线程。一个进程中的多个线程会共享该进程的地址空间。线程只拥有少量的栈空间。线程的缺点：不利于资源的管理和保护<sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup>。
-<ul>
-<li>创建：<code>pthread_create()</code></li>
-<li>退出：<code>pthread_exit()</code></li>
-<li>等待：<code>pthread_join()</code></li>
-</ul>
-<span id="more"></span>
-</li>
-<li>用比喻理解两者关系：进程就好比一个学校的某一间宿舍，线程就好比该宿舍中的某个人。</li>
-<li>查看进程相关信息的命令：<code>ps -elf</code></li>
-<li>查看线程相关信息的命令：<code>ps -elLf</code>（查看的时核心级线程id）</li>
-</ol>
-<h1 id="线程的种类"><a class="markdownIt-Anchor" href="#线程的种类"></a> 线程的种类</h1>
-<ol>
-<li>用户级：用户自己创建的线程。</li>
-<li>核心级：CPU实际运行的线程。</li>
-</ol>
-<h1 id="线程的一些操作"><a class="markdownIt-Anchor" href="#线程的一些操作"></a> 线程的一些操作</h1>
-<ol>
-<li>
-<p>线程的创建：<code>int pthread_create(pthread_t *thread, const pthread_attr_t attr, void *(*start_routine)(void *), void *arg)</code></p>
-<ul>
-<li>
-<p>返回值：成功返回0，失败返回错误码。</p>
-</li>
-<li>
-<p>参数1：线程id。</p>
-</li>
-<li>
-<p>参数2：线程的属性，没有特殊设置填NULL。</p>
-</li>
-<li>
-<p>参数3：线程的处理函数，注意函数类型为void *型。</p>
-</li>
-<li>
-<p>参数4：线程处理函数的参数。</p>
-</li>
-</ul>
-</li>
-<li>
-<p>线程的等待：<code>int pthread_join(pthread_t thread, void **retval)</code></p>
-<ul>
-<li>返回值：成功返回0，失败返回错误码。</li>
-<li>参数1：等待退出的线程id。</li>
-<li>参数2：接收子线程的退出，可以接收指针类型的退出状态，也可以接收long类型的变量。</li>
-</ul>
-</li>
-<li>
-<p>线程的退出：<code>int pthread_exit(void *retval)</code></p>
-<ul>
-<li>返回值：使用函数的返回值作为线程的退出状态。（函数说明直译的，一般没啥用）</li>
-<li>参数：指向线程thread的返回值，一般填NULL。</li>
-</ul>
-</li>
-<li>
-<p>线程id的获取：<code>pthread_t pthread_self(void)</code>，永远不会失败，成功返回线程id。</p>
-</li>
-<li>
-<p>线程的取消：</p>
-<ol>
-<li>线程可以自己调用线程退出函数退出，也可以被其他线程杀掉，被其他线程杀掉的方式就叫做线程的取消。</li>
-<li>被杀掉的线程可以选择自己如何处理这个信号，如：忽略、立即终止、运行到<strong>取消点</strong>后终止。</li>
-<li>取消点：就是一些特殊函数：一般的阻塞性函数都是取消点，非阻塞性函数也有可能是取消点。</li>
-<li>线程取消函数：<code>int pthread_cancel(pthread_t thread)</code>
-<ul>
-<li>返回值：成功返回0，失败返回错误码。</li>
-<li>想要cancel掉的线程id。</li>
-</ul>
-</li>
-</ol>
-</li>
-</ol>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li id="fn1" class="footnote-item"><p>—个进程的上下文(context)包括进程的状态、有关变量和数据结构的值、机器寄存器的值和PCB以及有关程序、数据等。一个进程的执行是在进程的上下文中执行。当正在执行的进程由于某种原因要让出处理机时，系统要做进程上下文切换，以使另一个进程得以执行。当进行上下文切换时点统要首先检查是否允许做上下文切换(在有些情况下，上下文切换是不允许的，例如系统正在执行某个不允许中断的原语时)。然后，系统要保留有关被切换进程的足够信息，以便以后切换回该进程时，顺利恢复该进程的执行。在系统保留了CPU现场之后，调度程序选择一个新的处于就绪状态的进程、并装配该进程的上下文，使CPU的控制权掌握在被选中进程手中。 <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-<li id="fn2" class="footnote-item"><p>线程上锁后如果崩溃了，那么资源无法得到释放，其他线程都无法继续正常执行 <a href="#fnref2" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
-]]></content>
-      <tags>
-        <tag>C</tag>
       </tags>
   </entry>
   <entry>
