@@ -198,7 +198,7 @@
               <span class="post-meta-item-text">Posted on</span>
               
 
-              <time title="Created: 2021-07-15 18:10:20 / Modified: 19:03:09" itemprop="dateCreated datePublished" datetime="2021-07-15T18:10:20+08:00">2021-07-15</time>
+              <time title="Created: 2021-07-15 18:10:20 / Modified: 19:19:53" itemprop="dateCreated datePublished" datetime="2021-07-15T18:10:20+08:00">2021-07-15</time>
             </span>
 
           
@@ -222,46 +222,6 @@
 <li>对于IO密集型的任务：线程数量一般等于CPU核心数的二倍。</li>
 <li>对于CPU密集型的任务：线程的数量一般等于CPU核心数+1。</li>
 </ul>
-</li>
-</ol>
-<h2 id="程序运行流程"><a class="markdownIt-Anchor" href="#程序运行流程"></a> 程序运行流程</h2>
-<ol>
-<li>主线程：
-<ol>
-<li>创建线程池，初始化。</li>
-<li>线程池启动，创建制定数量的线程。</li>
-<li>服务器绑定tcp通信套接字。</li>
-<li>创建epoll，并将需要监听的tcp通信套接字放入epoll。</li>
-<li><code>accept()</code>函数等待客户端连接。</li>
-<li>接收客户端连接，创建任务队列中的任务节点，将用于与客户端连接的通信描述符存入任务节点，再将任务节点放入任务队列，队列长度＋1。并激发所有的条件变量。</li>
-<li>回到步骤5等待下一次客户端请求连接。</li>
-</ol>
-</li>
-<li>子线程：
-<ol>
-<li>队列上锁，进入<code>pthread_cond_wait()</code>函数。</li>
-<li>等待主线程激发。</li>
-<li>子线程被激发，抢到任务队列中的任务节点，任务节点出队，队列长度－1，解锁。</li>
-<li>用任务节点中的文件描述符服务客户端，服务完关闭文件描述符。</li>
-<li>回到步骤1等待下一次任务。</li>
-</ol>
-</li>
-</ol>
-<h2 id="程序的退出"><a class="markdownIt-Anchor" href="#程序的退出"></a> 程序的退出</h2>
-<ol>
-<li>主线程：
-<ol>
-<li>收到退出信号，通过信号处理函数对退出管道进行写数据。</li>
-<li>epoll监听到，主线程将任务队列中的退出标识位置1，并激发所有条件变量。</li>
-<li>等到所有子线程退出后主线程再退出。</li>
-</ol>
-</li>
-<li>子线程：
-<ol>
-<li>队列上锁，进入<code>pthread_cond_wait()</code>函数。</li>
-<li>等待主线程激发。</li>
-<li>子线程被激发，发现任务队列中推出标识位为1，进行线程的退出。</li>
-</ol>
 </li>
 </ol>
           <!--noindex-->
