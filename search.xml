@@ -430,6 +430,212 @@
       </tags>
   </entry>
   <entry>
+    <title>线程池</title>
+    <url>/2021/07/15/%E7%BA%BF%E7%A8%8B%E6%B1%A0/</url>
+    <content><![CDATA[<h1 id="线程池"><a class="markdownIt-Anchor" href="#线程池"></a> 线程池</h1>
+<p>使用线程池的好处：</p>
+<ol>
+<li>降低资源的消耗，多个线程能共享同一个进程的内存空间。</li>
+<li>提高响应速度，任务来时能直接响应不需要等待。</li>
+<li>提高现成的可管理性，线程不能无限制创建，有数量限制。
+<ul>
+<li>对于IO密集型的任务：线程数量一般等于CPU核心数的二倍。</li>
+<li>对于CPU密集型的任务：线程的数量一般等于CPU核心数+1。</li>
+</ul>
+</li>
+</ol>
+<h2 id="程序运行流程"><a class="markdownIt-Anchor" href="#程序运行流程"></a> 程序运行流程</h2>
+<ol>
+<li>主线程：
+<ol>
+<li>创建线程池，初始化。</li>
+<li>线程池启动，创建制定数量的线程。</li>
+<li>服务器绑定tcp通信套接字。</li>
+<li>创建epoll，并将需要监听的tcp通信套接字放入epoll。</li>
+<li><code>accept()</code>函数等待客户端连接。</li>
+<li>接收客户端连接，创建任务队列中的任务节点，将用于与客户端连接的通信描述符存入任务节点，再将任务节点放入任务队列，队列长度＋1。并激发所有的条件变量。</li>
+<li>回到步骤5等待下一次客户端请求连接。</li>
+</ol>
+</li>
+<li>子线程：
+<ol>
+<li>队列上锁，进入<code>pthread_cond_wait()</code>函数。</li>
+<li>等待主线程激发。</li>
+<li>子线程被激发，抢到任务队列中的任务节点，任务节点出队，队列长度－1，解锁。</li>
+<li>用任务节点中的文件描述符服务客户端，服务完关闭文件描述符。</li>
+<li>回到步骤1等待下一次任务。</li>
+</ol>
+</li>
+</ol>
+<h2 id="程序的退出"><a class="markdownIt-Anchor" href="#程序的退出"></a> 程序的退出</h2>
+<ol>
+<li>主线程：
+<ol>
+<li>收到退出信号，通过信号处理函数对退出管道进行写数据。</li>
+<li>epoll监听到，主线程将任务队列中的退出标识位置1，并激发所有条件变量。</li>
+<li>等到所有子线程退出后主线程再退出。</li>
+</ol>
+</li>
+<li>子线程：
+<ol>
+<li>队列上锁，进入<code>pthread_cond_wait()</code>函数。</li>
+<li>等待主线程激发。</li>
+<li>子线程被激发，发现任务队列中推出标识位为1，进行线程的退出。</li>
+</ol>
+</li>
+</ol>
+<span id="more"></span>
+<h2 id="数据结构设计"><a class="markdownIt-Anchor" href="#数据结构设计"></a> 数据结构设计</h2>
+<ol>
+<li>
+<p>线程池结构体：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//线程池结构体</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="comment">//线程个数</span></span><br><span class="line">    <span class="keyword">int</span> thread_num;</span><br><span class="line">    <span class="comment">//线程id数组，动态创建</span></span><br><span class="line">    <span class="keyword">pthread_t</span> *pThread_id;</span><br><span class="line">    <span class="comment">//任务队列</span></span><br><span class="line">    <span class="keyword">task_que_t</span> task_que;</span><br><span class="line">&#125;<span class="keyword">thread_pool_t</span>, *pThread_pool_t;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>任务队列结构体：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//任务队列</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">task_que_s</span>&#123;</span></span><br><span class="line">    <span class="comment">//退出信号</span></span><br><span class="line">    <span class="keyword">short</span> exit_flag;</span><br><span class="line">    <span class="comment">//任务队列长度</span></span><br><span class="line">    <span class="keyword">int</span> que_len;</span><br><span class="line">    <span class="comment">//线程的条件变量</span></span><br><span class="line">    <span class="keyword">pthread_cond_t</span> que_cond;</span><br><span class="line">    <span class="comment">//线程锁</span></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> que_mutex;</span><br><span class="line">    <span class="comment">//任务队列的首尾指针</span></span><br><span class="line">    pTask_node_t pHead, pTail;</span><br><span class="line">&#125;<span class="keyword">task_que_t</span>, *pTask_que_t;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>任务节点结构体：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//每个任务中存储与客户端通信的文件描述符</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">task_node_s</span>&#123;</span></span><br><span class="line">    <span class="comment">//与客户端通信的文件描述符</span></span><br><span class="line">    <span class="keyword">int</span> client_fd;</span><br><span class="line">    <span class="comment">//下一个任务</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_node_s</span> *<span class="title">pNext</span>;</span></span><br><span class="line">&#125;<span class="keyword">task_node_t</span>, *pTask_node_t;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>传输数据结构体：</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//用于传输数据</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span>&#123;</span></span><br><span class="line">    <span class="keyword">int</span> data_len;</span><br><span class="line">    <span class="keyword">char</span> data_buf[<span class="number">1000</span>];</span><br><span class="line">&#125;<span class="keyword">train_t</span>;</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h2 id="主程序设计"><a class="markdownIt-Anchor" href="#主程序设计"></a> 主程序设计</h2>
+<h3 id="mainc主程序"><a class="markdownIt-Anchor" href="#mainc主程序"></a> main.c:主程序</h3>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;../head/func.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;../head/taskque.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;../head/threadpoll.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> out_pipe[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main_sigfunc</span><span class="params">(<span class="keyword">int</span> signum)</span></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;sig = %d is coming\n&quot;</span>, signum);</span><br><span class="line">    write(out_pipe[<span class="number">1</span>], <span class="string">&quot;1&quot;</span>, <span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc,<span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//./server_pool ip port pthread_num</span></span><br><span class="line">    ARGS_CHECK(argc, <span class="number">4</span>);</span><br><span class="line"></span><br><span class="line">    signal(<span class="number">10</span>, main_sigfunc);</span><br><span class="line">    pipe(out_pipe);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(fork())&#123;</span><br><span class="line">        <span class="comment">//主进程关闭读端</span></span><br><span class="line">        close(out_pipe[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//等待子进程的退出然后退出</span></span><br><span class="line">        wait(<span class="literal">NULL</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;main out\n&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//子进程关闭写端</span></span><br><span class="line">    close(out_pipe[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> pthread_num = atoi(argv[<span class="number">3</span>]);</span><br><span class="line">    <span class="comment">//创建进程池结构体，不是指针！</span></span><br><span class="line">    <span class="keyword">thread_pool_t</span> pool;</span><br><span class="line">    <span class="built_in">memset</span>(&amp;pool, <span class="number">0</span>, <span class="keyword">sizeof</span>(pool));</span><br><span class="line"></span><br><span class="line">    <span class="comment">//1.初始化线程池，创建pthread_num个线程空间，创建任务队列</span></span><br><span class="line">    ret = ThreadPoolInit(&amp;pool, pthread_num);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;ThreadPoolInit&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.开启线程池，创建线程，接收任务</span></span><br><span class="line">    ret = ThreadPoolCreate(&amp;pool);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;ThreadPoolCreate&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//3.创建Tcp套接字监听连接</span></span><br><span class="line">    <span class="keyword">int</span> socket_fd = <span class="number">0</span>;</span><br><span class="line">    ret = TcpInit(argv[<span class="number">1</span>], argv[<span class="number">2</span>], &amp;socket_fd);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;TcpInit&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//4.创建epoll，参数只要大于0就行，并将需要监听的文件描述符添加到epoll中</span></span><br><span class="line">    <span class="keyword">int</span> epoll_fd = epoll_create(<span class="number">1</span>);</span><br><span class="line">    ret = EpollAddFd(epoll_fd, socket_fd);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;EpollAddFd&quot;</span>);</span><br><span class="line">    ret = EpollAddFd(epoll_fd, out_pipe[<span class="number">0</span>]);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;EpollAddFd&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//epoll结构体，存放就绪文件描述符</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">evs</span>[2];</span></span><br><span class="line">    <span class="built_in">memset</span>(evs, <span class="number">0</span>, <span class="keyword">sizeof</span>(struct epoll_event));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//-1表示无条件等待</span></span><br><span class="line">        <span class="keyword">int</span> ready_num = epoll_wait(epoll_fd, evs, <span class="number">2</span>, <span class="number">-1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ready_num; ++i)&#123;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span>(evs[i].data.fd == out_pipe[<span class="number">0</span>])&#123;</span><br><span class="line">                </span><br><span class="line">                <span class="comment">//修改任务队列中的退出标号为1</span></span><br><span class="line">                pthread_mutex_lock(&amp;pool.task_que.que_mutex);</span><br><span class="line">                pool.task_que.exit_flag = <span class="number">1</span>;</span><br><span class="line">                pthread_mutex_unlock(&amp;pool.task_que.que_mutex);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//激发全部条件变量</span></span><br><span class="line">                ret = pthread_cond_broadcast(&amp;pool.task_que.que_cond);</span><br><span class="line">                THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_cond_broadcast&quot;</span>);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//等待线程退出</span></span><br><span class="line">                <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; pthread_num; ++j)&#123;</span><br><span class="line">                    pthread_join(pool.pThread_id[j], <span class="literal">NULL</span>);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;child process exit\n&quot;</span>);</span><br><span class="line">                <span class="comment">//子进程退出</span></span><br><span class="line">                <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span>(evs[i].data.fd == socket_fd)&#123;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//接收新连接的文件描述符</span></span><br><span class="line">                <span class="keyword">int</span> new_fd = accept(socket_fd, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">                ERROR_CHECK(new_fd, <span class="number">-1</span>, <span class="string">&quot;accept&quot;</span>);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//保存文件描述符到任务节点</span></span><br><span class="line">                pTask_node_t pTask = (pTask_node_t)<span class="built_in">calloc</span>(<span class="number">1</span>, <span class="keyword">sizeof</span>(<span class="keyword">task_node_t</span>));</span><br><span class="line">                pTask-&gt;client_fd = new_fd;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//用这种方式申请的节点，不能用free释放，浪费内存空间</span></span><br><span class="line">                <span class="comment">/* //保存文件描述符到任务节点 */</span></span><br><span class="line">                <span class="comment">/* task_node_t task_node; */</span></span><br><span class="line">                <span class="comment">/* memset(&amp;task_node, 0, sizeof(task_node_t)); */</span></span><br><span class="line">                <span class="comment">/* task_node.client_fd = new_fd; */</span></span><br><span class="line">                <span class="comment">/* printf(&quot;node save fd = %d\n&quot;, task_node.client_fd); */</span></span><br><span class="line"></span><br><span class="line">                <span class="comment">//加锁，互斥修改任务队列</span></span><br><span class="line">                pthread_mutex_lock(&amp;pool.task_que.que_mutex);</span><br><span class="line">                ret = InsertTaskQue(&amp;pool.task_que, pTask);</span><br><span class="line">                ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;InsertTaskQue&quot;</span>);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//插入节点成功，激发所有条件变量</span></span><br><span class="line">                ret = pthread_cond_broadcast(&amp;pool.task_que.que_cond);</span><br><span class="line">                THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_cond_broadcast&quot;</span>);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//解锁</span></span><br><span class="line">                pthread_mutex_unlock(&amp;pool.task_que.que_mutex);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="threadpoolc线程池相关函数"><a class="markdownIt-Anchor" href="#threadpoolc线程池相关函数"></a> ThreadPool.c：线程池相关函数</h3>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//void型的线程清理函数!</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clean_func</span><span class="params">(<span class="keyword">void</span> *p)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    pTask_que_t que = (pTask_que_t)p;</span><br><span class="line">    pthread_mutex_unlock(&amp;que-&gt;que_mutex);</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//线程处理函数</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">thread_func</span><span class="params">(<span class="keyword">void</span> *p)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//将传入进来的队列进行类型转换</span></span><br><span class="line">    pTask_que_t que = (pTask_que_t)p;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//创建任务节点用取任务</span></span><br><span class="line">    pTask_node_t pTask = <span class="literal">NULL</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//取任务函数的返回值，0为失败，1为成功</span></span><br><span class="line">    <span class="keyword">int</span> get_success = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//上锁互斥访问队列，如果之前上锁，则会阻塞</span></span><br><span class="line">        pthread_mutex_lock(&amp;que-&gt;que_mutex);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//清理函数紧贴要清理的资源，前面上锁了所以要在清理函数里面解锁</span></span><br><span class="line">        pthread_cleanup_push(clean_func, que);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//如果队列中没有节点</span></span><br><span class="line">        <span class="comment">//函数上半部做的是：1.条件变量上排队2.解锁3.睡眠等待激发</span></span><br><span class="line">        <span class="comment">//函数下半部做的是：1.被唤醒（激发）2.加锁，如果已经上锁，则阻塞至锁解锁，然后加锁3.pthread_cond_wait函数返回</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == que-&gt;que_len)&#123;</span><br><span class="line">            pthread_cond_wait(&amp;que-&gt;que_cond, &amp;que-&gt;que_mutex);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//GetTaskNode取节点</span></span><br><span class="line">        get_success = GetTaskNode(que, &amp;pTask);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//解锁</span></span><br><span class="line">        pthread_mutex_unlock(&amp;que-&gt;que_mutex);</span><br><span class="line">        pthread_cleanup_pop(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//取节点成功，用文件描述符发送文件，任务完成释放节点资源，置为空指针</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">1</span> == get_success)&#123;</span><br><span class="line">            TransFile(pTask-&gt;client_fd);</span><br><span class="line">            <span class="built_in">free</span>(pTask);</span><br><span class="line">            pTask = <span class="literal">NULL</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">1</span> == que-&gt;exit_flag)&#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;thread out\n&quot;</span>);</span><br><span class="line">            <span class="comment">//线程退出</span></span><br><span class="line">            pthread_exit(<span class="literal">NULL</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//线程池的初始化</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ThreadPoolInit</span><span class="params">(pThread_pool_t pThreadPool, <span class="keyword">int</span> thread_num)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//线程数量</span></span><br><span class="line">    pThreadPool-&gt;thread_num = thread_num;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//为线程id申请空间</span></span><br><span class="line">    pThreadPool-&gt;pThread_id = (<span class="keyword">pthread_t</span> *)<span class="built_in">calloc</span>(thread_num, <span class="keyword">sizeof</span>(<span class="keyword">pthread_t</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">//任务队列初始化</span></span><br><span class="line">    ret = TaskQueInit(&amp;pThreadPool-&gt;task_que);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;TaskQueInit&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ThreadPoolCreate</span><span class="params">(pThread_pool_t pThreadPool)</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//循环创建线程</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; pThreadPool-&gt;thread_num; ++i)&#123;</span><br><span class="line">        <span class="comment">//两种方式</span></span><br><span class="line">        <span class="comment">/* ret = pthread_create(pThreadPool-&gt;pThread_id + i, NULL, thread_func, &amp;pThreadPool-&gt;task_que); */</span></span><br><span class="line">        ret = pthread_create(&amp;pThreadPool-&gt;pThread_id[i], <span class="literal">NULL</span>, thread_func, &amp;pThreadPool-&gt;task_que);</span><br><span class="line">        THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_create&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="taskquec任务队列相关函数"><a class="markdownIt-Anchor" href="#taskquec任务队列相关函数"></a> TaskQue.c：任务队列相关函数</h3>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//队列初始化函数，初始化任务队列中的元素</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">TaskQueInit</span><span class="params">(pTask_que_t pTaskQue)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    pTaskQue-&gt;que_len = <span class="number">0</span>;</span><br><span class="line">    pTaskQue-&gt;pHead = <span class="literal">NULL</span>;</span><br><span class="line">    pTaskQue-&gt;pTail = <span class="literal">NULL</span>;</span><br><span class="line">    ret = pthread_cond_init(&amp;pTaskQue-&gt;que_cond, <span class="literal">NULL</span>);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_cond_init&quot;</span>);</span><br><span class="line">    ret = pthread_mutex_init(&amp;pTaskQue-&gt;que_mutex, <span class="literal">NULL</span>);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_mutex_init&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//入队，尾插法</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">InsertTaskQue</span><span class="params">(pTask_que_t pTaskQue, pTask_node_t pTaskNode)</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//任务队列中没有任务节点时，头尾指针指向新加入的任务节点</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="number">0</span> == pTaskQue-&gt;que_len)&#123;</span><br><span class="line">        pTaskQue-&gt;pHead = pTaskNode;</span><br><span class="line">        pTaskQue-&gt;pTail = pTaskNode;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//有节点，尾插法</span></span><br><span class="line">    <span class="keyword">else</span>&#123;</span><br><span class="line">        pTaskQue-&gt;pTail-&gt;pNext = pTaskNode;</span><br><span class="line">        pTaskQue-&gt;pTail = pTaskNode;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//入队后队列长度+1</span></span><br><span class="line">    ++pTaskQue-&gt;que_len;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//出队，头部删除法</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GetTaskNode</span><span class="params">(pTask_que_t pTaskQue, pTask_node_t *pGetTaskNode)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//有节点，头部删除法</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="number">0</span> != pTaskQue-&gt;que_len)&#123;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//待取出的节点指向头指针</span></span><br><span class="line">        *pGetTaskNode = pTaskQue-&gt;pHead;</span><br><span class="line">        pTaskQue-&gt;pHead = pTaskQue-&gt;pHead-&gt;pNext;</span><br><span class="line">        (*pGetTaskNode)-&gt;pNext = <span class="literal">NULL</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//出队后队列长度-1</span></span><br><span class="line">        --pTaskQue-&gt;que_len;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//取完后队列长度为0，把尾指针置空</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == pTaskQue-&gt;que_len)&#123;</span><br><span class="line">            pTaskQue-&gt;pTail = <span class="literal">NULL</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//没节点，返回0</span></span><br><span class="line">    <span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="tcpinitc-transfilec-epolladdfdc前文进程池中定义过的函数"><a class="markdownIt-Anchor" href="#tcpinitc-transfilec-epolladdfdc前文进程池中定义过的函数"></a> TcpInit.c、TransFile.c、EpollAddFd.c：前文进程池中定义过的函数</h3>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">TcpInit</span><span class="params">(<span class="keyword">char</span> *ip, <span class="keyword">char</span>*port, <span class="keyword">int</span> *socket_fd)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">addr</span>;</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;addr, <span class="number">0</span>, <span class="keyword">sizeof</span>(addr));</span><br><span class="line">    <span class="comment">/*分别设置协议、IP地址和端口号*/</span></span><br><span class="line">    addr.sin_family = AF_INET;</span><br><span class="line">    addr.sin_addr.s_addr = inet_addr(ip);</span><br><span class="line">    addr.sin_port = htons(atoi(port));</span><br><span class="line"></span><br><span class="line">    *socket_fd = socket(AF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line">    ERROR_CHECK(*socket_fd, <span class="number">-1</span>, <span class="string">&quot;socket&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//设置地址可重用</span></span><br><span class="line">    <span class="keyword">int</span> reuse = <span class="number">1</span>;</span><br><span class="line">    ret = setsockopt(*socket_fd, SOL_SOCKET, SO_REUSEADDR, &amp;reuse, <span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;setsockopt&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//设置缓冲区大小</span></span><br><span class="line">    <span class="keyword">int</span> buf = <span class="number">65536</span>;</span><br><span class="line">    ret = setsockopt(*socket_fd, SOL_SOCKET, SO_SNDBUF, &amp;buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;setsockopt&quot;</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//绑定ip地址和端口号</span></span><br><span class="line">    ret = bind(*socket_fd, (struct sockaddr*)&amp;addr, <span class="keyword">sizeof</span>(addr));</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;bind&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//监听描述符，最大连接数设置为10</span></span><br><span class="line">    ret = listen(*socket_fd, <span class="number">10</span>);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;ret&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sigfunc</span><span class="params">(<span class="keyword">int</span> signum)</span></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;SIGPIPE is coming&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">TransFile</span><span class="params">(<span class="keyword">int</span> client_fd)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    signal(SIGPIPE, sigfunc);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//打开文件描述符</span></span><br><span class="line">    <span class="keyword">int</span> fd = open(<span class="string">&quot;1.pdf&quot;</span>, O_RDWR);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;open&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//获取当前文件的状态</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">fileInfo</span>;</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;fileInfo, <span class="number">0</span>, <span class="keyword">sizeof</span>(fileInfo));</span><br><span class="line">    ret = fstat(fd, &amp;fileInfo);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;fstat&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//创建传输数据结构体</span></span><br><span class="line">    <span class="keyword">train_t</span> train;</span><br><span class="line">    <span class="built_in">memset</span>(&amp;train, <span class="number">0</span>, <span class="keyword">sizeof</span>(train));</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//发送文件名</span></span><br><span class="line">    train.data_len = <span class="built_in">strlen</span>(<span class="string">&quot;1.pdf&quot;</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(train.data_buf, <span class="string">&quot;1.pdf&quot;</span>);</span><br><span class="line">    ret = send(client_fd, &amp;train, <span class="number">4</span> + train.data_len, <span class="number">0</span>);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;send&quot;</span>);</span><br><span class="line">    <span class="built_in">memset</span>(&amp;train, <span class="number">0</span>, <span class="keyword">sizeof</span>(train));</span><br><span class="line"></span><br><span class="line">    <span class="comment">//发送文件大小</span></span><br><span class="line">    train.data_len = <span class="keyword">sizeof</span>(fileInfo.st_size);</span><br><span class="line">    <span class="built_in">memcpy</span>(train.data_buf, &amp;fileInfo.st_size, <span class="keyword">sizeof</span>(<span class="keyword">off_t</span>));</span><br><span class="line">    send(client_fd, &amp;train, <span class="number">4</span> + train.data_len, <span class="number">0</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;fileSize = %ld\n&quot;</span>, fileInfo.st_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> send_size = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> fds[<span class="number">2</span>] = &#123; <span class="number">0</span> &#125;;</span><br><span class="line">    pipe(fds);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">while</span>(send_size &lt; fileInfo.st_size)&#123;</span><br><span class="line">        ret = splice(fd, <span class="number">0</span>, fds[<span class="number">1</span>], <span class="number">0</span>, <span class="number">64</span>, <span class="number">0</span>);</span><br><span class="line">        ret = splice(fds[<span class="number">0</span>], <span class="number">0</span>, client_fd, <span class="number">0</span>, ret, <span class="number">0</span>);</span><br><span class="line">        ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;splice&quot;</span>);</span><br><span class="line">        send_size += ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    close(fds[<span class="number">0</span>]);</span><br><span class="line">    close(fds[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">EpollAddFd</span><span class="params">(<span class="keyword">int</span> epoll_fd, <span class="keyword">int</span> fd)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">events</span>;</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;events, <span class="number">0</span>, <span class="keyword">sizeof</span>(events));</span><br><span class="line"></span><br><span class="line">    events.events = EPOLLIN;</span><br><span class="line">    events.data.fd = fd;</span><br><span class="line"></span><br><span class="line">    ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &amp;events);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;epoll_ctl&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="客户端用前文进程池的客户端即可"><a class="markdownIt-Anchor" href="#客户端用前文进程池的客户端即可"></a> 客户端：用前文进程池的客户端即可</h3>
+<h1 id="遇到的问题"><a class="markdownIt-Anchor" href="#遇到的问题"></a> 遇到的问题</h1>
+<ol>
+<li>
+<p>free任务节点空间时报错。</p>
+<ul>
+<li>原因：创建任务节点时，一开始用的是栈空间申请，子线程取节点服务完服务器后无法通过free释放节点空间，会报错。</li>
+<li>解决办法：使用堆空间申请任务节点，使用完后能方便的清理空间。</li>
+</ul>
+</li>
+<li>
+<p>入队、出队的时候忘记对队列长度进程+1、-1操作，程序报错。</p>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>C</tag>
+        <tag>Linux</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>线程</title>
+    <url>/2021/07/14/%E7%BA%BF%E7%A8%8B/</url>
+    <content><![CDATA[<h1 id="进程与线程的特点与区别"><a class="markdownIt-Anchor" href="#进程与线程的特点与区别"></a> 进程与线程的特点与区别</h1>
+<ol>
+<li>进程：资源分配的基本单位（最小单位），拥有自己独立的资源，如自己独立的数据段、代码段和堆栈段，所以在CPU进行进程切换时需要保存大量的上下文<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>，需要大量的时间开销。<strong>为了减少这一时间开销，因此引入了线程。</strong>
+<ul>
+<li>创建：<code>fork()</code></li>
+<li>退出：<code>exit()</code></li>
+<li>等待：<code>wait()</code></li>
+</ul>
+</li>
+<li>线程：CPU调度的基本单位，一个进程至少拥有一个线程。一个进程中的多个线程会共享该进程的地址空间。线程只拥有少量的栈空间。线程的缺点：不利于资源的管理和保护<sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup>。
+<ul>
+<li>创建：<code>pthread_create()</code></li>
+<li>退出：<code>pthread_exit()</code></li>
+<li>等待：<code>pthread_join()</code></li>
+</ul>
+<span id="more"></span>
+</li>
+<li>用比喻理解两者关系：进程就好比一个学校的某一间宿舍，线程就好比该宿舍中的某个人。</li>
+<li>查看进程相关信息的命令：<code>ps -elf</code></li>
+<li>查看线程相关信息的命令：<code>ps -elLf</code>（查看的时核心级线程id）</li>
+</ol>
+<h1 id="线程的种类"><a class="markdownIt-Anchor" href="#线程的种类"></a> 线程的种类</h1>
+<ol>
+<li>用户级：用户自己创建的线程。</li>
+<li>核心级：CPU实际运行的线程。</li>
+</ol>
+<h1 id="线程的一些操作"><a class="markdownIt-Anchor" href="#线程的一些操作"></a> 线程的一些操作</h1>
+<ol>
+<li>
+<p>线程的创建：<code>int pthread_create(pthread_t *thread, const pthread_attr_t attr, void *(*start_routine)(void *), void *arg)</code></p>
+<ul>
+<li>
+<p>返回值：成功返回0，失败返回错误码。</p>
+</li>
+<li>
+<p>参数1：线程id。</p>
+</li>
+<li>
+<p>参数2：线程的属性，没有特殊设置填NULL。</p>
+</li>
+<li>
+<p>参数3：线程的处理函数，注意函数类型为void *型。</p>
+</li>
+<li>
+<p>参数4：线程处理函数的参数。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>线程的等待：<code>int pthread_join(pthread_t thread, void **retval)</code></p>
+<ul>
+<li>返回值：成功返回0，失败返回错误码。</li>
+<li>参数1：等待退出的线程id。</li>
+<li>参数2：接收子线程的退出，可以接收指针类型的退出状态，也可以接收long类型的变量。</li>
+</ul>
+</li>
+<li>
+<p>线程的退出：<code>int pthread_exit(void *retval)</code></p>
+<ul>
+<li>返回值：使用函数的返回值作为线程的退出状态。（函数说明直译的，一般没啥用）</li>
+<li>参数：指向线程thread的返回值，一般填NULL。</li>
+</ul>
+</li>
+<li>
+<p>线程id的获取：<code>pthread_t pthread_self(void)</code>，永远不会失败，成功返回线程id。</p>
+</li>
+<li>
+<p>线程的取消：</p>
+<ol>
+<li>线程可以自己调用线程退出函数退出，也可以被其他线程杀掉，被其他线程杀掉的方式就叫做线程的取消。</li>
+<li>被杀掉的线程可以选择自己如何处理这个信号，如：忽略、立即终止、运行到<strong>取消点</strong>后终止。</li>
+<li>取消点：就是一些特殊函数：一般的阻塞性函数都是取消点，非阻塞性函数也有可能是取消点。</li>
+<li>线程取消函数：<code>int pthread_cancel(pthread_t thread)</code>
+<ul>
+<li>返回值：成功返回0，失败返回错误码。</li>
+<li>想要cancel掉的线程id。</li>
+</ul>
+</li>
+</ol>
+</li>
+</ol>
+<hr class="footnotes-sep">
+<section class="footnotes">
+<ol class="footnotes-list">
+<li id="fn1" class="footnote-item"><p>—个进程的上下文(context)包括进程的状态、有关变量和数据结构的值、机器寄存器的值和PCB以及有关程序、数据等。一个进程的执行是在进程的上下文中执行。当正在执行的进程由于某种原因要让出处理机时，系统要做进程上下文切换，以使另一个进程得以执行。当进行上下文切换时点统要首先检查是否允许做上下文切换(在有些情况下，上下文切换是不允许的，例如系统正在执行某个不允许中断的原语时)。然后，系统要保留有关被切换进程的足够信息，以便以后切换回该进程时，顺利恢复该进程的执行。在系统保留了CPU现场之后，调度程序选择一个新的处于就绪状态的进程、并装配该进程的上下文，使CPU的控制权掌握在被选中进程手中。 <a href="#fnref1" class="footnote-backref">↩︎</a></p>
+</li>
+<li id="fn2" class="footnote-item"><p>线程上锁后如果崩溃了，那么资源无法得到释放，其他线程都无法继续正常执行 <a href="#fnref2" class="footnote-backref">↩︎</a></p>
+</li>
+</ol>
+</section>
+]]></content>
+      <tags>
+        <tag>C</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>进程池</title>
     <url>/2021/07/12/%E8%BF%9B%E7%A8%8B%E6%B1%A0/</url>
     <content><![CDATA[<h1 id="进程池"><a class="markdownIt-Anchor" href="#进程池"></a> 进程池</h1>
@@ -603,212 +809,6 @@
 ]]></content>
       <tags>
         <tag>C</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>线程</title>
-    <url>/2021/07/14/%E7%BA%BF%E7%A8%8B/</url>
-    <content><![CDATA[<h1 id="进程与线程的特点与区别"><a class="markdownIt-Anchor" href="#进程与线程的特点与区别"></a> 进程与线程的特点与区别</h1>
-<ol>
-<li>进程：资源分配的基本单位（最小单位），拥有自己独立的资源，如自己独立的数据段、代码段和堆栈段，所以在CPU进行进程切换时需要保存大量的上下文<sup class="footnote-ref"><a href="#fn1" id="fnref1">[1]</a></sup>，需要大量的时间开销。<strong>为了减少这一时间开销，因此引入了线程。</strong>
-<ul>
-<li>创建：<code>fork()</code></li>
-<li>退出：<code>exit()</code></li>
-<li>等待：<code>wait()</code></li>
-</ul>
-</li>
-<li>线程：CPU调度的基本单位，一个进程至少拥有一个线程。一个进程中的多个线程会共享该进程的地址空间。线程只拥有少量的栈空间。线程的缺点：不利于资源的管理和保护<sup class="footnote-ref"><a href="#fn2" id="fnref2">[2]</a></sup>。
-<ul>
-<li>创建：<code>pthread_create()</code></li>
-<li>退出：<code>pthread_exit()</code></li>
-<li>等待：<code>pthread_join()</code></li>
-</ul>
-<span id="more"></span>
-</li>
-<li>用比喻理解两者关系：进程就好比一个学校的某一间宿舍，线程就好比该宿舍中的某个人。</li>
-<li>查看进程相关信息的命令：<code>ps -elf</code></li>
-<li>查看线程相关信息的命令：<code>ps -elLf</code>（查看的时核心级线程id）</li>
-</ol>
-<h1 id="线程的种类"><a class="markdownIt-Anchor" href="#线程的种类"></a> 线程的种类</h1>
-<ol>
-<li>用户级：用户自己创建的线程。</li>
-<li>核心级：CPU实际运行的线程。</li>
-</ol>
-<h1 id="线程的一些操作"><a class="markdownIt-Anchor" href="#线程的一些操作"></a> 线程的一些操作</h1>
-<ol>
-<li>
-<p>线程的创建：<code>int pthread_create(pthread_t *thread, const pthread_attr_t attr, void *(*start_routine)(void *), void *arg)</code></p>
-<ul>
-<li>
-<p>返回值：成功返回0，失败返回错误码。</p>
-</li>
-<li>
-<p>参数1：线程id。</p>
-</li>
-<li>
-<p>参数2：线程的属性，没有特殊设置填NULL。</p>
-</li>
-<li>
-<p>参数3：线程的处理函数，注意函数类型为void *型。</p>
-</li>
-<li>
-<p>参数4：线程处理函数的参数。</p>
-</li>
-</ul>
-</li>
-<li>
-<p>线程的等待：<code>int pthread_join(pthread_t thread, void **retval)</code></p>
-<ul>
-<li>返回值：成功返回0，失败返回错误码。</li>
-<li>参数1：等待退出的线程id。</li>
-<li>参数2：接收子线程的退出，可以接收指针类型的退出状态，也可以接收long类型的变量。</li>
-</ul>
-</li>
-<li>
-<p>线程的退出：<code>int pthread_exit(void *retval)</code></p>
-<ul>
-<li>返回值：使用函数的返回值作为线程的退出状态。（函数说明直译的，一般没啥用）</li>
-<li>参数：指向线程thread的返回值，一般填NULL。</li>
-</ul>
-</li>
-<li>
-<p>线程id的获取：<code>pthread_t pthread_self(void)</code>，永远不会失败，成功返回线程id。</p>
-</li>
-<li>
-<p>线程的取消：</p>
-<ol>
-<li>线程可以自己调用线程退出函数退出，也可以被其他线程杀掉，被其他线程杀掉的方式就叫做线程的取消。</li>
-<li>被杀掉的线程可以选择自己如何处理这个信号，如：忽略、立即终止、运行到<strong>取消点</strong>后终止。</li>
-<li>取消点：就是一些特殊函数：一般的阻塞性函数都是取消点，非阻塞性函数也有可能是取消点。</li>
-<li>线程取消函数：<code>int pthread_cancel(pthread_t thread)</code>
-<ul>
-<li>返回值：成功返回0，失败返回错误码。</li>
-<li>想要cancel掉的线程id。</li>
-</ul>
-</li>
-</ol>
-</li>
-</ol>
-<hr class="footnotes-sep">
-<section class="footnotes">
-<ol class="footnotes-list">
-<li id="fn1" class="footnote-item"><p>—个进程的上下文(context)包括进程的状态、有关变量和数据结构的值、机器寄存器的值和PCB以及有关程序、数据等。一个进程的执行是在进程的上下文中执行。当正在执行的进程由于某种原因要让出处理机时，系统要做进程上下文切换，以使另一个进程得以执行。当进行上下文切换时点统要首先检查是否允许做上下文切换(在有些情况下，上下文切换是不允许的，例如系统正在执行某个不允许中断的原语时)。然后，系统要保留有关被切换进程的足够信息，以便以后切换回该进程时，顺利恢复该进程的执行。在系统保留了CPU现场之后，调度程序选择一个新的处于就绪状态的进程、并装配该进程的上下文，使CPU的控制权掌握在被选中进程手中。 <a href="#fnref1" class="footnote-backref">↩︎</a></p>
-</li>
-<li id="fn2" class="footnote-item"><p>线程上锁后如果崩溃了，那么资源无法得到释放，其他线程都无法继续正常执行 <a href="#fnref2" class="footnote-backref">↩︎</a></p>
-</li>
-</ol>
-</section>
-]]></content>
-      <tags>
-        <tag>C</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>线程池</title>
-    <url>/2021/07/15/%E7%BA%BF%E7%A8%8B%E6%B1%A0/</url>
-    <content><![CDATA[<h1 id="线程池"><a class="markdownIt-Anchor" href="#线程池"></a> 线程池</h1>
-<p>使用线程池的好处：</p>
-<ol>
-<li>降低资源的消耗，多个线程能共享同一个进程的内存空间。</li>
-<li>提高响应速度，任务来时能直接响应不需要等待。</li>
-<li>提高现成的可管理性，线程不能无限制创建，有数量限制。
-<ul>
-<li>对于IO密集型的任务：线程数量一般等于CPU核心数的二倍。</li>
-<li>对于CPU密集型的任务：线程的数量一般等于CPU核心数+1。</li>
-</ul>
-</li>
-</ol>
-<h2 id="程序运行流程"><a class="markdownIt-Anchor" href="#程序运行流程"></a> 程序运行流程</h2>
-<ol>
-<li>主线程：
-<ol>
-<li>创建线程池，初始化。</li>
-<li>线程池启动，创建制定数量的线程。</li>
-<li>服务器绑定tcp通信套接字。</li>
-<li>创建epoll，并将需要监听的tcp通信套接字放入epoll。</li>
-<li><code>accept()</code>函数等待客户端连接。</li>
-<li>接收客户端连接，创建任务队列中的任务节点，将用于与客户端连接的通信描述符存入任务节点，再将任务节点放入任务队列，队列长度＋1。并激发所有的条件变量。</li>
-<li>回到步骤5等待下一次客户端请求连接。</li>
-</ol>
-</li>
-<li>子线程：
-<ol>
-<li>队列上锁，进入<code>pthread_cond_wait()</code>函数。</li>
-<li>等待主线程激发。</li>
-<li>子线程被激发，抢到任务队列中的任务节点，任务节点出队，队列长度－1，解锁。</li>
-<li>用任务节点中的文件描述符服务客户端，服务完关闭文件描述符。</li>
-<li>回到步骤1等待下一次任务。</li>
-</ol>
-</li>
-</ol>
-<h2 id="程序的退出"><a class="markdownIt-Anchor" href="#程序的退出"></a> 程序的退出</h2>
-<ol>
-<li>主线程：
-<ol>
-<li>收到退出信号，通过信号处理函数对退出管道进行写数据。</li>
-<li>epoll监听到，主线程将任务队列中的退出标识位置1，并激发所有条件变量。</li>
-<li>等到所有子线程退出后主线程再退出。</li>
-</ol>
-</li>
-<li>子线程：
-<ol>
-<li>队列上锁，进入<code>pthread_cond_wait()</code>函数。</li>
-<li>等待主线程激发。</li>
-<li>子线程被激发，发现任务队列中推出标识位为1，进行线程的退出。</li>
-</ol>
-</li>
-</ol>
-<span id="more"></span>
-<h2 id="数据结构设计"><a class="markdownIt-Anchor" href="#数据结构设计"></a> 数据结构设计</h2>
-<ol>
-<li>
-<p>线程池结构体：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//线程池结构体</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="comment">//线程个数</span></span><br><span class="line">    <span class="keyword">int</span> thread_num;</span><br><span class="line">    <span class="comment">//线程id数组，动态创建</span></span><br><span class="line">    <span class="keyword">pthread_t</span> *pThread_id;</span><br><span class="line">    <span class="comment">//任务队列</span></span><br><span class="line">    <span class="keyword">task_que_t</span> task_que;</span><br><span class="line">&#125;<span class="keyword">thread_pool_t</span>, *pThread_pool_t;</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>任务队列结构体：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//任务队列</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">task_que_s</span>&#123;</span></span><br><span class="line">    <span class="comment">//退出信号</span></span><br><span class="line">    <span class="keyword">short</span> exit_flag;</span><br><span class="line">    <span class="comment">//任务队列长度</span></span><br><span class="line">    <span class="keyword">int</span> que_len;</span><br><span class="line">    <span class="comment">//线程的条件变量</span></span><br><span class="line">    <span class="keyword">pthread_cond_t</span> que_cond;</span><br><span class="line">    <span class="comment">//线程锁</span></span><br><span class="line">    <span class="keyword">pthread_mutex_t</span> que_mutex;</span><br><span class="line">    <span class="comment">//任务队列的首尾指针</span></span><br><span class="line">    pTask_node_t pHead, pTail;</span><br><span class="line">&#125;<span class="keyword">task_que_t</span>, *pTask_que_t;</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>任务节点结构体：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//每个任务中存储与客户端通信的文件描述符</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">task_node_s</span>&#123;</span></span><br><span class="line">    <span class="comment">//与客户端通信的文件描述符</span></span><br><span class="line">    <span class="keyword">int</span> client_fd;</span><br><span class="line">    <span class="comment">//下一个任务</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_node_s</span> *<span class="title">pNext</span>;</span></span><br><span class="line">&#125;<span class="keyword">task_node_t</span>, *pTask_node_t;</span><br></pre></td></tr></table></figure>
-</li>
-<li>
-<p>传输数据结构体：</p>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//用于传输数据</span></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span>&#123;</span></span><br><span class="line">    <span class="keyword">int</span> data_len;</span><br><span class="line">    <span class="keyword">char</span> data_buf[<span class="number">1000</span>];</span><br><span class="line">&#125;<span class="keyword">train_t</span>;</span><br></pre></td></tr></table></figure>
-</li>
-</ol>
-<h2 id="主程序设计"><a class="markdownIt-Anchor" href="#主程序设计"></a> 主程序设计</h2>
-<h3 id="mainc主程序"><a class="markdownIt-Anchor" href="#mainc主程序"></a> main.c:主程序</h3>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;../head/func.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;../head/taskque.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&quot;../head/threadpoll.h&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">int</span> out_pipe[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">main_sigfunc</span><span class="params">(<span class="keyword">int</span> signum)</span></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;sig = %d is coming\n&quot;</span>, signum);</span><br><span class="line">    write(out_pipe[<span class="number">1</span>], <span class="string">&quot;1&quot;</span>, <span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc,<span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//./server_pool ip port pthread_num</span></span><br><span class="line">    ARGS_CHECK(argc, <span class="number">4</span>);</span><br><span class="line"></span><br><span class="line">    signal(<span class="number">10</span>, main_sigfunc);</span><br><span class="line">    pipe(out_pipe);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(fork())&#123;</span><br><span class="line">        <span class="comment">//主进程关闭读端</span></span><br><span class="line">        close(out_pipe[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//等待子进程的退出然后退出</span></span><br><span class="line">        wait(<span class="literal">NULL</span>);</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;main out\n&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//子进程关闭写端</span></span><br><span class="line">    close(out_pipe[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> pthread_num = atoi(argv[<span class="number">3</span>]);</span><br><span class="line">    <span class="comment">//创建进程池结构体，不是指针！</span></span><br><span class="line">    <span class="keyword">thread_pool_t</span> pool;</span><br><span class="line">    <span class="built_in">memset</span>(&amp;pool, <span class="number">0</span>, <span class="keyword">sizeof</span>(pool));</span><br><span class="line"></span><br><span class="line">    <span class="comment">//1.初始化线程池，创建pthread_num个线程空间，创建任务队列</span></span><br><span class="line">    ret = ThreadPoolInit(&amp;pool, pthread_num);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;ThreadPoolInit&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//2.开启线程池，创建线程，接收任务</span></span><br><span class="line">    ret = ThreadPoolCreate(&amp;pool);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;ThreadPoolCreate&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//3.创建Tcp套接字监听连接</span></span><br><span class="line">    <span class="keyword">int</span> socket_fd = <span class="number">0</span>;</span><br><span class="line">    ret = TcpInit(argv[<span class="number">1</span>], argv[<span class="number">2</span>], &amp;socket_fd);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;TcpInit&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//4.创建epoll，参数只要大于0就行，并将需要监听的文件描述符添加到epoll中</span></span><br><span class="line">    <span class="keyword">int</span> epoll_fd = epoll_create(<span class="number">1</span>);</span><br><span class="line">    ret = EpollAddFd(epoll_fd, socket_fd);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;EpollAddFd&quot;</span>);</span><br><span class="line">    ret = EpollAddFd(epoll_fd, out_pipe[<span class="number">0</span>]);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;EpollAddFd&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//epoll结构体，存放就绪文件描述符</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">evs</span>[2];</span></span><br><span class="line">    <span class="built_in">memset</span>(evs, <span class="number">0</span>, <span class="keyword">sizeof</span>(struct epoll_event));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//-1表示无条件等待</span></span><br><span class="line">        <span class="keyword">int</span> ready_num = epoll_wait(epoll_fd, evs, <span class="number">2</span>, <span class="number">-1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; ready_num; ++i)&#123;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span>(evs[i].data.fd == out_pipe[<span class="number">0</span>])&#123;</span><br><span class="line">                </span><br><span class="line">                <span class="comment">//修改任务队列中的退出标号为1</span></span><br><span class="line">                pthread_mutex_lock(&amp;pool.task_que.que_mutex);</span><br><span class="line">                pool.task_que.exit_flag = <span class="number">1</span>;</span><br><span class="line">                pthread_mutex_unlock(&amp;pool.task_que.que_mutex);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//激发全部条件变量</span></span><br><span class="line">                ret = pthread_cond_broadcast(&amp;pool.task_que.que_cond);</span><br><span class="line">                THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_cond_broadcast&quot;</span>);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//等待线程退出</span></span><br><span class="line">                <span class="keyword">for</span>(<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; pthread_num; ++j)&#123;</span><br><span class="line">                    pthread_join(pool.pThread_id[j], <span class="literal">NULL</span>);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;child process exit\n&quot;</span>);</span><br><span class="line">                <span class="comment">//子进程退出</span></span><br><span class="line">                <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span>(evs[i].data.fd == socket_fd)&#123;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//接收新连接的文件描述符</span></span><br><span class="line">                <span class="keyword">int</span> new_fd = accept(socket_fd, <span class="literal">NULL</span>, <span class="literal">NULL</span>);</span><br><span class="line">                ERROR_CHECK(new_fd, <span class="number">-1</span>, <span class="string">&quot;accept&quot;</span>);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//保存文件描述符到任务节点</span></span><br><span class="line">                pTask_node_t pTask = (pTask_node_t)<span class="built_in">calloc</span>(<span class="number">1</span>, <span class="keyword">sizeof</span>(<span class="keyword">task_node_t</span>));</span><br><span class="line">                pTask-&gt;client_fd = new_fd;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//用这种方式申请的节点，不能用free释放，浪费内存空间</span></span><br><span class="line">                <span class="comment">/* //保存文件描述符到任务节点 */</span></span><br><span class="line">                <span class="comment">/* task_node_t task_node; */</span></span><br><span class="line">                <span class="comment">/* memset(&amp;task_node, 0, sizeof(task_node_t)); */</span></span><br><span class="line">                <span class="comment">/* task_node.client_fd = new_fd; */</span></span><br><span class="line">                <span class="comment">/* printf(&quot;node save fd = %d\n&quot;, task_node.client_fd); */</span></span><br><span class="line"></span><br><span class="line">                <span class="comment">//加锁，互斥修改任务队列</span></span><br><span class="line">                pthread_mutex_lock(&amp;pool.task_que.que_mutex);</span><br><span class="line">                ret = InsertTaskQue(&amp;pool.task_que, pTask);</span><br><span class="line">                ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;InsertTaskQue&quot;</span>);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//插入节点成功，激发所有条件变量</span></span><br><span class="line">                ret = pthread_cond_broadcast(&amp;pool.task_que.que_cond);</span><br><span class="line">                THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_cond_broadcast&quot;</span>);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//解锁</span></span><br><span class="line">                pthread_mutex_unlock(&amp;pool.task_que.que_mutex);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="threadpoolc线程池相关函数"><a class="markdownIt-Anchor" href="#threadpoolc线程池相关函数"></a> ThreadPool.c：线程池相关函数</h3>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//void型的线程清理函数!</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">clean_func</span><span class="params">(<span class="keyword">void</span> *p)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    pTask_que_t que = (pTask_que_t)p;</span><br><span class="line">    pthread_mutex_unlock(&amp;que-&gt;que_mutex);</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//线程处理函数</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">thread_func</span><span class="params">(<span class="keyword">void</span> *p)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//将传入进来的队列进行类型转换</span></span><br><span class="line">    pTask_que_t que = (pTask_que_t)p;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//创建任务节点用取任务</span></span><br><span class="line">    pTask_node_t pTask = <span class="literal">NULL</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//取任务函数的返回值，0为失败，1为成功</span></span><br><span class="line">    <span class="keyword">int</span> get_success = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//上锁互斥访问队列，如果之前上锁，则会阻塞</span></span><br><span class="line">        pthread_mutex_lock(&amp;que-&gt;que_mutex);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//清理函数紧贴要清理的资源，前面上锁了所以要在清理函数里面解锁</span></span><br><span class="line">        pthread_cleanup_push(clean_func, que);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//如果队列中没有节点</span></span><br><span class="line">        <span class="comment">//函数上半部做的是：1.条件变量上排队2.解锁3.睡眠等待激发</span></span><br><span class="line">        <span class="comment">//函数下半部做的是：1.被唤醒（激发）2.加锁，如果已经上锁，则阻塞至锁解锁，然后加锁3.pthread_cond_wait函数返回</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == que-&gt;que_len)&#123;</span><br><span class="line">            pthread_cond_wait(&amp;que-&gt;que_cond, &amp;que-&gt;que_mutex);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//GetTaskNode取节点</span></span><br><span class="line">        get_success = GetTaskNode(que, &amp;pTask);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//解锁</span></span><br><span class="line">        pthread_mutex_unlock(&amp;que-&gt;que_mutex);</span><br><span class="line">        pthread_cleanup_pop(<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//取节点成功，用文件描述符发送文件，任务完成释放节点资源，置为空指针</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">1</span> == get_success)&#123;</span><br><span class="line">            TransFile(pTask-&gt;client_fd);</span><br><span class="line">            <span class="built_in">free</span>(pTask);</span><br><span class="line">            pTask = <span class="literal">NULL</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">1</span> == que-&gt;exit_flag)&#123;</span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;thread out\n&quot;</span>);</span><br><span class="line">            <span class="comment">//线程退出</span></span><br><span class="line">            pthread_exit(<span class="literal">NULL</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//线程池的初始化</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ThreadPoolInit</span><span class="params">(pThread_pool_t pThreadPool, <span class="keyword">int</span> thread_num)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//线程数量</span></span><br><span class="line">    pThreadPool-&gt;thread_num = thread_num;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//为线程id申请空间</span></span><br><span class="line">    pThreadPool-&gt;pThread_id = (<span class="keyword">pthread_t</span> *)<span class="built_in">calloc</span>(thread_num, <span class="keyword">sizeof</span>(<span class="keyword">pthread_t</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">//任务队列初始化</span></span><br><span class="line">    ret = TaskQueInit(&amp;pThreadPool-&gt;task_que);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;TaskQueInit&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">ThreadPoolCreate</span><span class="params">(pThread_pool_t pThreadPool)</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//循环创建线程</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; pThreadPool-&gt;thread_num; ++i)&#123;</span><br><span class="line">        <span class="comment">//两种方式</span></span><br><span class="line">        <span class="comment">/* ret = pthread_create(pThreadPool-&gt;pThread_id + i, NULL, thread_func, &amp;pThreadPool-&gt;task_que); */</span></span><br><span class="line">        ret = pthread_create(&amp;pThreadPool-&gt;pThread_id[i], <span class="literal">NULL</span>, thread_func, &amp;pThreadPool-&gt;task_que);</span><br><span class="line">        THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_create&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="taskquec任务队列相关函数"><a class="markdownIt-Anchor" href="#taskquec任务队列相关函数"></a> TaskQue.c：任务队列相关函数</h3>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//队列初始化函数，初始化任务队列中的元素</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">TaskQueInit</span><span class="params">(pTask_que_t pTaskQue)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    pTaskQue-&gt;que_len = <span class="number">0</span>;</span><br><span class="line">    pTaskQue-&gt;pHead = <span class="literal">NULL</span>;</span><br><span class="line">    pTaskQue-&gt;pTail = <span class="literal">NULL</span>;</span><br><span class="line">    ret = pthread_cond_init(&amp;pTaskQue-&gt;que_cond, <span class="literal">NULL</span>);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_cond_init&quot;</span>);</span><br><span class="line">    ret = pthread_mutex_init(&amp;pTaskQue-&gt;que_mutex, <span class="literal">NULL</span>);</span><br><span class="line">    THREAD_ERROR_CHECK(ret, <span class="string">&quot;pthread_mutex_init&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//入队，尾插法</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">InsertTaskQue</span><span class="params">(pTask_que_t pTaskQue, pTask_node_t pTaskNode)</span></span>&#123;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//任务队列中没有任务节点时，头尾指针指向新加入的任务节点</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="number">0</span> == pTaskQue-&gt;que_len)&#123;</span><br><span class="line">        pTaskQue-&gt;pHead = pTaskNode;</span><br><span class="line">        pTaskQue-&gt;pTail = pTaskNode;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//有节点，尾插法</span></span><br><span class="line">    <span class="keyword">else</span>&#123;</span><br><span class="line">        pTaskQue-&gt;pTail-&gt;pNext = pTaskNode;</span><br><span class="line">        pTaskQue-&gt;pTail = pTaskNode;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//入队后队列长度+1</span></span><br><span class="line">    ++pTaskQue-&gt;que_len;</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//出队，头部删除法</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">GetTaskNode</span><span class="params">(pTask_que_t pTaskQue, pTask_node_t *pGetTaskNode)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//有节点，头部删除法</span></span><br><span class="line">    <span class="keyword">if</span>(<span class="number">0</span> != pTaskQue-&gt;que_len)&#123;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//待取出的节点指向头指针</span></span><br><span class="line">        *pGetTaskNode = pTaskQue-&gt;pHead;</span><br><span class="line">        pTaskQue-&gt;pHead = pTaskQue-&gt;pHead-&gt;pNext;</span><br><span class="line">        (*pGetTaskNode)-&gt;pNext = <span class="literal">NULL</span>;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//出队后队列长度-1</span></span><br><span class="line">        --pTaskQue-&gt;que_len;</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//取完后队列长度为0，把尾指针置空</span></span><br><span class="line">        <span class="keyword">if</span>(<span class="number">0</span> == pTaskQue-&gt;que_len)&#123;</span><br><span class="line">            pTaskQue-&gt;pTail = <span class="literal">NULL</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//没节点，返回0</span></span><br><span class="line">    <span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="tcpinitc-transfilec-epolladdfdc前文进程池中定义过的函数"><a class="markdownIt-Anchor" href="#tcpinitc-transfilec-epolladdfdc前文进程池中定义过的函数"></a> TcpInit.c、TransFile.c、EpollAddFd.c：前文进程池中定义过的函数</h3>
-<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">TcpInit</span><span class="params">(<span class="keyword">char</span> *ip, <span class="keyword">char</span>*port, <span class="keyword">int</span> *socket_fd)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">sockaddr_in</span> <span class="title">addr</span>;</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;addr, <span class="number">0</span>, <span class="keyword">sizeof</span>(addr));</span><br><span class="line">    <span class="comment">/*分别设置协议、IP地址和端口号*/</span></span><br><span class="line">    addr.sin_family = AF_INET;</span><br><span class="line">    addr.sin_addr.s_addr = inet_addr(ip);</span><br><span class="line">    addr.sin_port = htons(atoi(port));</span><br><span class="line"></span><br><span class="line">    *socket_fd = socket(AF_INET, SOCK_STREAM, <span class="number">0</span>);</span><br><span class="line">    ERROR_CHECK(*socket_fd, <span class="number">-1</span>, <span class="string">&quot;socket&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//设置地址可重用</span></span><br><span class="line">    <span class="keyword">int</span> reuse = <span class="number">1</span>;</span><br><span class="line">    ret = setsockopt(*socket_fd, SOL_SOCKET, SO_REUSEADDR, &amp;reuse, <span class="keyword">sizeof</span>(<span class="keyword">int</span>));</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;setsockopt&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//设置缓冲区大小</span></span><br><span class="line">    <span class="keyword">int</span> buf = <span class="number">65536</span>;</span><br><span class="line">    ret = setsockopt(*socket_fd, SOL_SOCKET, SO_SNDBUF, &amp;buf, <span class="keyword">sizeof</span>(buf));</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;setsockopt&quot;</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//绑定ip地址和端口号</span></span><br><span class="line">    ret = bind(*socket_fd, (struct sockaddr*)&amp;addr, <span class="keyword">sizeof</span>(addr));</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;bind&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//监听描述符，最大连接数设置为10</span></span><br><span class="line">    ret = listen(*socket_fd, <span class="number">10</span>);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;ret&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">sigfunc</span><span class="params">(<span class="keyword">int</span> signum)</span></span>&#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;SIGPIPE is coming&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">TransFile</span><span class="params">(<span class="keyword">int</span> client_fd)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    signal(SIGPIPE, sigfunc);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//打开文件描述符</span></span><br><span class="line">    <span class="keyword">int</span> fd = open(<span class="string">&quot;1.pdf&quot;</span>, O_RDWR);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;open&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//获取当前文件的状态</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">fileInfo</span>;</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;fileInfo, <span class="number">0</span>, <span class="keyword">sizeof</span>(fileInfo));</span><br><span class="line">    ret = fstat(fd, &amp;fileInfo);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;fstat&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//创建传输数据结构体</span></span><br><span class="line">    <span class="keyword">train_t</span> train;</span><br><span class="line">    <span class="built_in">memset</span>(&amp;train, <span class="number">0</span>, <span class="keyword">sizeof</span>(train));</span><br><span class="line">    </span><br><span class="line">    <span class="comment">//发送文件名</span></span><br><span class="line">    train.data_len = <span class="built_in">strlen</span>(<span class="string">&quot;1.pdf&quot;</span>);</span><br><span class="line">    <span class="built_in">strcpy</span>(train.data_buf, <span class="string">&quot;1.pdf&quot;</span>);</span><br><span class="line">    ret = send(client_fd, &amp;train, <span class="number">4</span> + train.data_len, <span class="number">0</span>);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;send&quot;</span>);</span><br><span class="line">    <span class="built_in">memset</span>(&amp;train, <span class="number">0</span>, <span class="keyword">sizeof</span>(train));</span><br><span class="line"></span><br><span class="line">    <span class="comment">//发送文件大小</span></span><br><span class="line">    train.data_len = <span class="keyword">sizeof</span>(fileInfo.st_size);</span><br><span class="line">    <span class="built_in">memcpy</span>(train.data_buf, &amp;fileInfo.st_size, <span class="keyword">sizeof</span>(<span class="keyword">off_t</span>));</span><br><span class="line">    send(client_fd, &amp;train, <span class="number">4</span> + train.data_len, <span class="number">0</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;fileSize = %ld\n&quot;</span>, fileInfo.st_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> send_size = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> fds[<span class="number">2</span>] = &#123; <span class="number">0</span> &#125;;</span><br><span class="line">    pipe(fds);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">while</span>(send_size &lt; fileInfo.st_size)&#123;</span><br><span class="line">        ret = splice(fd, <span class="number">0</span>, fds[<span class="number">1</span>], <span class="number">0</span>, <span class="number">64</span>, <span class="number">0</span>);</span><br><span class="line">        ret = splice(fds[<span class="number">0</span>], <span class="number">0</span>, client_fd, <span class="number">0</span>, ret, <span class="number">0</span>);</span><br><span class="line">        ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;splice&quot;</span>);</span><br><span class="line">        send_size += ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    close(fds[<span class="number">0</span>]);</span><br><span class="line">    close(fds[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">EpollAddFd</span><span class="params">(<span class="keyword">int</span> epoll_fd, <span class="keyword">int</span> fd)</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">epoll_event</span> <span class="title">events</span>;</span></span><br><span class="line">    <span class="built_in">memset</span>(&amp;events, <span class="number">0</span>, <span class="keyword">sizeof</span>(events));</span><br><span class="line"></span><br><span class="line">    events.events = EPOLLIN;</span><br><span class="line">    events.data.fd = fd;</span><br><span class="line"></span><br><span class="line">    ret = epoll_ctl(epoll_fd, EPOLL_CTL_ADD, fd, &amp;events);</span><br><span class="line">    ERROR_CHECK(ret, <span class="number">-1</span>, <span class="string">&quot;epoll_ctl&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<hr>
-<h3 id="客户端用前文进程池的客户端即可"><a class="markdownIt-Anchor" href="#客户端用前文进程池的客户端即可"></a> 客户端：用前文进程池的客户端即可</h3>
-<h1 id="遇到的问题"><a class="markdownIt-Anchor" href="#遇到的问题"></a> 遇到的问题</h1>
-<ol>
-<li>
-<p>free任务节点空间时报错。</p>
-<ul>
-<li>原因：创建任务节点时，一开始用的是栈空间申请，子线程取节点服务完服务器后无法通过free释放节点空间，会报错。</li>
-<li>解决办法：使用堆空间申请任务节点，使用完后能方便的清理空间。</li>
-</ul>
-</li>
-<li>
-<p>入队、出队的时候忘记对队列长度进程+1、-1操作，程序报错。</p>
-</li>
-</ol>
-]]></content>
-      <tags>
-        <tag>C</tag>
-        <tag>Linux</tag>
       </tags>
   </entry>
 </search>
