@@ -370,6 +370,24 @@
 </ol>
 <h1 id="mysql常用的数据类型"><a class="markdownIt-Anchor" href="#mysql常用的数据类型"></a> MySQL常用的数据类型</h1>
 <img src="/images/MySQL常用数据类型.png" alt="img MySQL常用数据类型">
+<h1 id="mysql使用远程登录的配置修改"><a class="markdownIt-Anchor" href="#mysql使用远程登录的配置修改"></a> MySQL使用远程登录的配置修改</h1>
+<ol>
+<li>
+<p>进入配置文件修改相应配置</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>注释掉<code>bind-address = 127.0.0.1</code>(前面加#号)，保存并退出</p>
+</li>
+<li>
+<p>进入数据库执行授权命令</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line"># %表示任意ip可登录</span><br><span class="line">mysql&gt; grant all on *.* to &lt;数据库用户名&gt;@&#x27;%&#x27; identified by &#x27;&lt;用户密码&gt;&#x27; with grant option;</span><br><span class="line"></span><br><span class="line"># 刷新权限</span><br><span class="line">mysql&gt; flush privileges;</span><br><span class="line"></span><br><span class="line"># 退出MySQL</span><br><span class="line">mysql&gt; exit;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>重启MySQL</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">systemctl restart mysql</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
 <h1 id="mysql部分操作"><a class="markdownIt-Anchor" href="#mysql部分操作"></a> MySQL部分操作</h1>
 <ol>
 <li>
