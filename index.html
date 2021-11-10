@@ -204,7 +204,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2021-11-11 00:05:59" itemprop="dateModified" datetime="2021-11-11T00:05:59+08:00">2021-11-11</time>
+                <time title="Modified: 2021-11-11 00:07:27" itemprop="dateModified" datetime="2021-11-11T00:07:27+08:00">2021-11-11</time>
               </span>
 
           
@@ -219,188 +219,14 @@
 
       
           <h1 id="linux常用指令整理"><a class="markdownIt-Anchor" href="#linux常用指令整理"></a> Linux常用指令整理</h1>
-<ol>
-<li>
-<p>查找含<code>xxx</code>信息的进程：<code>ps -elf|grep xxx</code></p>
-</li>
-<li>
-<p>查看当前使用系统的用户：<code>who</code></p>
-</li>
-<li>
-<p>查看系统的发行版本：<code>cat /etc/issue</code></p>
-</li>
-<li>
-<p>查看内核版本：<code>uname -a</code></p>
-</li>
-<li>
-<p>查看当前工作目录：<code>pwd</code></p>
-</li>
-<li>
-<p><code>man</code>命令：</p>
-<ol>
-<li><code>man xxx</code>：显示xxx的使用文档</li>
-<li><code>man -k xxx</code>：用xxx搜索整个手册的匹配部分</li>
-<li><code>man -f xxx</code>：用xxx搜索整个手册的完全匹配部分</li>
-</ol>
-</li>
-<li>
-<p><code>chmod</code>命令：修改文件权限</p>
-<table>
-<thead>
-<tr>
-<th>用户身份</th>
-<th>行为</th>
-<th>权限</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>u：拥有者</td>
-<td>+：添加</td>
-<td>r：读权限</td>
-</tr>
-<tr>
-<td>g：拥有者所在组</td>
-<td>-：删除</td>
-<td>w：写权限</td>
-</tr>
-<tr>
-<td>o：其他用户</td>
-<td>=：赋值</td>
-<td>x：执行权限</td>
-</tr>
-<tr>
-<td>a：所有用户</td>
-<td></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p><code>find</code>命令格式：</p>
-<ol>
-<li>
-<p><code>find [起始目录] [查找条件]</code></p>
-<table>
-<thead>
-<tr>
-<th>查找条件</th>
-<th>后续参数或者功能</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>-name</td>
-<td>[文件名]（需要完全匹配）（使用wildcard通配符可实现模糊查找，*取代任意字符串，?取代任意字符，[集合]取代集合内的内容）</td>
-</tr>
-<tr>
-<td>-user</td>
-<td>[用户名]</td>
-</tr>
-<tr>
-<td>-group</td>
-<td>[组名]</td>
-</tr>
-<tr>
-<td>-uid</td>
-<td>[用户id]</td>
-</tr>
-<tr>
-<td>-gid</td>
-<td>[组id]</td>
-</tr>
-<tr>
-<td>-perm</td>
-<td>[权限]（数字表表示）</td>
-</tr>
-<tr>
-<td>-size</td>
-<td>+/- [n 单位]（默认为一个块512bytes）</td>
-</tr>
-<tr>
-<td>-type</td>
-<td>[类型]</td>
-</tr>
-<tr>
-<td>-empty</td>
-<td>（查找空目录）</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p>按时间查找：<code>find [参数] [+/-n](距离现在的时间间隔)</code></p>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>分钟</th>
-<th>天</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>a(访问时间)</td>
-<td>-amin</td>
-<td>-atime</td>
-</tr>
-<tr>
-<td>c(状态修改时间)</td>
-<td>-cmin</td>
-<td>-ctime</td>
-</tr>
-<tr>
-<td>m(内容修改时间)</td>
-<td>-mmin</td>
-<td>-mtime</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p>查找的与或非：</p>
-<table>
-<thead>
-<tr>
-<th>参数</th>
-<th>含义</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>-a</td>
-<td>与</td>
-</tr>
-<tr>
-<td>-o</td>
-<td>或</td>
-</tr>
-<tr>
-<td>!</td>
-<td>非</td>
-</tr>
-</tbody>
-</table>
-</li>
-<li>
-<p><code>-exec参数</code>：根据<code>find</code>的查找结果进行后续操作</p>
-<p>例：<code>find . -name &quot;file&quot; -exec ls -l &#123;(find . -name &quot;file&quot;)的查询结果&#125; \;</code></p>
-</li>
-</ol>
-</li>
-<li>
-<p>磁盘命令：</p>
-<ol>
-<li><code>df -h</code>：查看整个磁盘的文件系统</li>
-<li><code>du -d [n]</code>：查看当前目录下深度为的所有目录</li>
-</ol>
-</li>
-<li>
-<p>文件查看命令：<code>cat [-b/-n]（结果加行号，空白行（不加/加））</code></p>
-</li>
-</ol>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/11/09/Linux%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
