@@ -1122,4 +1122,32 @@
         <tag>C</tag>
       </tags>
   </entry>
+  <entry>
+    <title>Github操作整理</title>
+    <url>/2021/08/23/git%E4%B8%8A%E4%BC%A0/</url>
+    <content><![CDATA[<h1 id="github-操作整理"><a class="markdownIt-Anchor" href="#github-操作整理"></a> Github 操作整理</h1>
+<p>整理一些github的常用操作</p>
+<span id="more"></span>
+<h2 id="github上传"><a class="markdownIt-Anchor" href="#github上传"></a> Github上传</h2>
+<ol>
+<li>初始化：<code>git init</code></li>
+<li>添加仓库：<code>git remote add origin https://gitee.com/xxx/project.git</code></li>
+<li>切换<code>a</code>分支：<code>git checkout a</code></li>
+<li>下载<code>a</code>分支文件：<code>git pull origin a</code></li>
+<li>添加用户名：<code>git config --global user.name &quot;e@mail.com&quot;</code></li>
+<li>添加邮箱：<code>git config --global user.mail &quot;e@mail.com&quot;</code></li>
+<li>添加文件：
+<ol>
+<li>所有文件：<code>git add .</code></li>
+<li>某一文件：<code>git add + 文件名</code></li>
+</ol>
+</li>
+<li>将add的文件commit到仓库：<code>git commit -m &quot;备注&quot;</code></li>
+<li>上传文件：<code>git push origin a</code></li>
+</ol>
+]]></content>
+      <tags>
+        <tag>Github</tag>
+      </tags>
+  </entry>
 </search>

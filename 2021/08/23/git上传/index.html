@@ -20,15 +20,20 @@
     var CONFIG = {"hostname":"alebiaji.top","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta property="og:type" content="website">
-<meta property="og:title" content="Ale&#39;s Blog">
-<meta property="og:url" content="http://alebiaji.top/tags/MySQL/index.html">
+  <meta name="description" content="Github 操作整理 整理一些github的常用操作">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Github操作整理">
+<meta property="og:url" content="http://alebiaji.top/2021/08/23/git%E4%B8%8A%E4%BC%A0/index.html">
 <meta property="og:site_name" content="Ale&#39;s Blog">
+<meta property="og:description" content="Github 操作整理 整理一些github的常用操作">
 <meta property="og:locale">
+<meta property="article:published_time" content="2021-08-23T07:41:20.000Z">
+<meta property="article:modified_time" content="2021-11-10T09:59:21.942Z">
 <meta property="article:author" content="Alebiaji">
+<meta property="article:tag" content="Github">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://alebiaji.top/tags/MySQL/">
+<link rel="canonical" href="http://alebiaji.top/2021/08/23/git%E4%B8%8A%E4%BC%A0/">
 
 
 <script id="page-configurations">
@@ -36,12 +41,12 @@
   CONFIG.page = {
     sidebar: "",
     isHome : false,
-    isPost : false,
+    isPost : true,
     lang   : 'zh-Hans'
   };
 </script>
 
-  <title>Tag: MySQL | Ale's Blog</title>
+  <title>Github操作整理 | Ale's Blog</title>
   
 
 
@@ -167,51 +172,105 @@
         <div class="content-wrap">
           
 
-          <div class="content tag">
+          <div class="content post posts-expand">
             
 
+    
   
   
-  
-  <div class="post-block">
-    <div class="posts-collapse">
-      <div class="collection-title">
-        <h2 class="collection-header">MySQL
-          <small>Tag</small>
-        </h2>
-      </div>
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-Hans">
+    <link itemprop="mainEntityOfPage" href="http://alebiaji.top/2021/08/23/git%E4%B8%8A%E4%BC%A0/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Alebiaji">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Ale's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Github操作整理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2021-08-23 15:41:20" itemprop="dateCreated datePublished" datetime="2021-08-23T15:41:20+08:00">2021-08-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2021-11-10 17:59:21" itemprop="dateModified" datetime="2021-11-10T17:59:21+08:00">2021-11-10</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-    <div class="collection-year">
-      <span class="collection-header">2021</span>
+        <h1 id="github-操作整理"><a class="markdownIt-Anchor" href="#github-操作整理"></a> Github 操作整理</h1>
+<p>整理一些github的常用操作</p>
+<span id="more"></span>
+<h2 id="github上传"><a class="markdownIt-Anchor" href="#github上传"></a> Github上传</h2>
+<ol>
+<li>初始化：<code>git init</code></li>
+<li>添加仓库：<code>git remote add origin https://gitee.com/xxx/project.git</code></li>
+<li>切换<code>a</code>分支：<code>git checkout a</code></li>
+<li>下载<code>a</code>分支文件：<code>git pull origin a</code></li>
+<li>添加用户名：<code>git config --global user.name &quot;e@mail.com&quot;</code></li>
+<li>添加邮箱：<code>git config --global user.mail &quot;e@mail.com&quot;</code></li>
+<li>添加文件：
+<ol>
+<li>所有文件：<code>git add .</code></li>
+<li>某一文件：<code>git add + 文件名</code></li>
+</ol>
+</li>
+<li>将add的文件commit到仓库：<code>git commit -m &quot;备注&quot;</code></li>
+<li>上传文件：<code>git push origin a</code></li>
+</ol>
+
     </div>
 
-  <article itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+    
+    
+    
 
-      <div class="post-meta">
-        <time itemprop="dateCreated"
-              datetime="2021-07-15T19:31:20+08:00"
-              content="2021-07-15">
-          07-15
-        </time>
-      </div>
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Github/" rel="tag"># Github</a>
+          </div>
 
-      <div class="post-title">
-          <a class="post-title-link" href="/2021/07/15/mysql%E6%95%B0%E6%8D%AE%E5%BA%93%E6%93%8D%E4%BD%9C/" itemprop="url">
-            <span itemprop="name">MySQL整理</span>
-          </a>
-      </div>
+        
 
-    </header>
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/07/15/mysql%E6%95%B0%E6%8D%AE%E5%BA%93%E6%93%8D%E4%BD%9C/" rel="prev" title="MySQL整理">
+      <i class="fa fa-chevron-left"></i> MySQL整理
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
   </article>
-
-    </div>
-  </div>
   
   
-  
-
   
 
 
@@ -264,6 +323,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#github-%E6%93%8D%E4%BD%9C%E6%95%B4%E7%90%86"><span class="nav-number">1.</span> <span class="nav-text"> Github 操作整理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#github%E4%B8%8A%E4%BC%A0"><span class="nav-number">1.1.</span> <span class="nav-text"> Github上传</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
