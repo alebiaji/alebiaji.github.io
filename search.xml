@@ -1519,4 +1519,18 @@
         <tag>Linux</tag>
       </tags>
   </entry>
+  <entry>
+    <title>VSCode远程开发免密登录</title>
+    <url>/2021/11/13/vscode%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95/</url>
+    <content><![CDATA[<ol>
+<li>开发机进入cmd界面，输入<code>ssh-keygen</code>生成密钥。</li>
+<li>将id_rsa.pub传入服务器。</li>
+<li>输入命令<code>cat id_rsa.pub &gt;&gt; authorized_keys</code>。</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>VSCode</tag>
+        <tag>Shell</tag>
+      </tags>
+  </entry>
 </search>
