@@ -1341,4 +1341,119 @@
         <tag>Linux</tag>
       </tags>
   </entry>
+  <entry>
+    <title>C++特性之继承</title>
+    <url>/2021/11/09/C++%E7%BB%A7%E6%89%BF/</url>
+    <content><![CDATA[<h1 id="继承"><a class="markdownIt-Anchor" href="#继承"></a> 继承</h1>
+<ol>
+<li>定义：从既有类（父类、基类）生成新类（子类、派生类）的过程。</li>
+</ol>
+<span id="more"></span>
+<ol start="2">
+<li>格式：</li>
+</ol>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> 派生类</span></span><br><span class="line"><span class="class">:</span> <span class="keyword">public</span>/<span class="keyword">protected</span>/<span class="keyword">private</span> 基类&#123;</span><br><span class="line">    <span class="comment">//默认的继承方式是私有继承</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ol start="3">
+<li>
+<p>继承时派生类生成的三个步骤：吸收、改造、添加。</p>
+</li>
+<li>
+<p>继承的局限性：以下这些基类特征不能被继承</p>
+<p>构造函数、析构函数、用户重载的operator new/delete运算符、用户重载的operator =运算符、友元关系。</p>
+</li>
+<li>
+<p>继承方式对派生类访问权限的影响</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">继承方式</th>
+<th style="text-align:center">基类成员访问权限</th>
+<th style="text-align:center">在派生类中访问权限</th>
+<th style="text-align:center">派生类对象访问</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center">public</td>
+<td style="text-align:center">public<br>protected<br>private</td>
+<td style="text-align:center">public<br>protected<br>不可直接访问</td>
+<td style="text-align:center">可直接访问<br>不可直接访问<br>不可直接访问</td>
+</tr>
+<tr>
+<td style="text-align:center">protected</td>
+<td style="text-align:center">public<br>protected<br>private</td>
+<td style="text-align:center">protected<br>protected<br>不可直接访问</td>
+<td style="text-align:center">不可直接访问</td>
+</tr>
+<tr>
+<td style="text-align:center">private</td>
+<td style="text-align:center">public<br>protected<br>private</td>
+<td style="text-align:center">private<br>private<br>不可直接访问</td>
+<td style="text-align:center">不可直接访问</td>
+</tr>
+</tbody>
+</table>
+<p>不管以什么方式继承，派生类内部都不能访问基类的私有成员，其他都可以访问。<strong>派生类对象</strong>除了公有继承基类中的公有成员可以访问外，其他的一律不能访问。</p>
+</li>
+<li>
+<p>派生类对象构造函数的一般格式：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">派生类(参数列表) ： 基类构造函数(参数列表)&#123;</span><br><span class="line">   <span class="comment">//函数体 </span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>派生类对象的销毁：派生类执行析构函数时，基类的析构函数会被自动调用。执行顺序是如下</p>
+<ol>
+<li>先调用派生类的析构函数</li>
+<li>在调用派生类中成员对象的析构函数</li>
+<li>最后调用普通基类的析构函数</li>
+</ol>
+</li>
+<li>
+<p>多基派生（继承）：派生类继承多个基类，格式如下</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> 派生类</span></span><br><span class="line"><span class="class">:</span> <span class="keyword">public</span>/<span class="keyword">protected</span>/<span class="keyword">private</span> 基类<span class="number">1</span></span><br><span class="line">, ...</span><br><span class="line">, <span class="keyword">public</span>/<span class="keyword">protected</span>/<span class="keyword">private</span> 基类N&#123; </span><br><span class="line">    <span class="comment">//派生类体</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+</li>
+<li>
+<p>多基继承的二义性：使用多基继承过程中，会产生两种二义性。</p>
+<ol>
+<li>
+<p>成员名冲突的二义性：当多个基类中出现同名函数时，发生成员名冲突二义性。</p>
+<p>解决方法：在调用时，使用作用于限定符调用函数。</p>
+</li>
+<li>
+<p>菱形继承的二义性：派生的多个基类在继承路径上有一个共同基类，如下图<img src="/images/菱形继承.png" alt="img 菱形继承"></p>
+<p>​解决方案：使用虚拟继承。</p>
+</li>
+</ol>
+</li>
+<li>
+<p>基类与派生类之间的转换：</p>
+<ol>
+<li>派生类对象可以赋值给基类对象</li>
+<li>基类的引用可以绑定到派生类对象</li>
+<li>声明基类的指针可以指向派生类对象</li>
+<li>向上转型：从派生类向基类进行转换，都是支持的。</li>
+<li>向下转型：从基类向派生类进行转换，分为安全和不安全的两类。</li>
+</ol>
+</li>
+<li>
+<p>派生类对象之间的复制控制：基类的拷贝构造函数和operator=运算符函数不能被派生类继承，因此在执行派生类对象间的复制操作时，需要注意以下情况：</p>
+<ol>
+<li>如果用户定义了基类的拷贝构造函数，而没有定义派生类的拷贝构造函数，那么在用一个派生类对<br>
+象初始化新的派生类对象时，两对象间的派生类部分执行缺省的行为，而两对象间的基类部分执行<br>
+用户定义的基类拷贝构造函数。</li>
+<li>如果用户重载了基类的赋值运算符函数，而没有重载派生类的赋值运算符函数，那么在用一个派生<br>
+类对象给另一个已经存在的派生类对象赋值时，两对象间的派生类部分执行缺省的赋值行为，而两<br>
+对象间的基类部分执行用户定义的重载赋值函数。</li>
+<li>如果用户定义了派生类的拷贝构造函数或者重载了派生类的对象赋值运算符=，则在用已有派生类<br>
+对象初始化新的派生类对象时，或者在派生类对象间赋值时，将会执行用户定义的派生类的拷贝构<br>
+造函数或者重载赋值函数，而不会再自动调用基类的拷贝构造函数和基类的重载对象赋值运算符，<br>
+这时，通常需要用户在派生类的拷贝构造函数或者派生类的赋值函数中显式调用基类的拷贝构造或<br>
+赋值运算符函数。</li>
+</ol>
+</li>
+</ol>
+]]></content>
+      <tags>
+        <tag>C++</tag>
+      </tags>
+  </entry>
 </search>
